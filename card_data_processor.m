@@ -9,6 +9,7 @@ properties
     data_10hz_avg;
     data_10hz_already_processed;
     data_30min;
+    flux_data_config;
     data_30min_secondary;
     insert_secondary_data;
     secondary_data_config;
@@ -118,6 +119,7 @@ methods
         obj.data_30min_secondary = p.Results.data_30min_secondary;
         obj.data_10hz_already_processed  = p.Results.data_10hz_already_processed;
         obj.insert_secondary_data = p.Results.insert_secondary_data;
+        obj.flux_data_config = [];
         obj.secondary_data_config = [];
 
         % if start date not specified, default to 1 Jan of current year
@@ -138,6 +140,8 @@ methods
                 'date_end precedes date_start');
             throw( err );
         end
+        
+        obj = get_logger_config( obj );
 
     end %constructor
 
@@ -159,28 +163,23 @@ methods
         % OUTPUTS:
         %    obj: CDP object with data_30min field updated.
         %    toa5_files: cell array; the TOA5 files whose data were added.
-
+        
         toa5_files = get_loggernet_filenames( obj.sitecode, ...
             obj.date_start, obj.date_end, 'TOA5' );
 
-        %obj.data_30min = combine_and_fill_TOA5_files( toa5_files );
         obj.data_30min = combine_and_fill_datalogger_files( ...
             obj.sitecode, 'TOA5', ...
             'file_names', toa5_files, ...
-            'resolve_headers', true, ...
-            'datalogger_name', 'flux' );
+            'resolve_headers', obj.flux_data_config(1).resolve_headers, ...
+            'datalogger_name', obj.flux_data_config(1).name );
 
     end  % get_30min_data
 
     % --------------------------------------------------
 
-    function obj = get_secondary_config( obj )
-        % Fill in the obj.secondary_data_config property with info from
-        % the Dataloggers YAML config file
-        
-        % Initialize flag indicating whether the secondary data
-        % overlaps obj.date_start and obj.date_end
-        overlap_flag = false;
+    function obj = get_logger_config( obj )
+        % Fill in the obj.flux_data_config and obj.secondary_data_config 
+        % properties with info from the Dataloggers YAML config file
         
         % Get configuration from the site's YAML config file
         conf = parse_yaml_config( obj.sitecode, 'Dataloggers', ...
@@ -188,42 +187,50 @@ methods
         % Separate out the secondary logger configs (not 'flux')
         dl_list = conf.dataloggers;
         if length( dl_list ) > 1
-            sec_conf = dl_list( ...
-                cellfun( @isempty, regexp( {dl_list.name}, 'flux' )));
+            secondaries = cellfun( @isempty, regexp(...
+                {dl_list.name}, 'flux' ));
+            flux_conf = dl_list( ~secondaries );
+            sec_conf = dl_list( secondaries );
+            obj = conf_within_dates( flux_conf, obj, 'flux_data_config' );
+            obj = conf_within_dates( sec_conf, obj, 'secondary_data_config' );
         else
+            obj.flux_data_config = dl_list(1);
             fprintf( 'No secondary data sources configured. Reset flag.\n');
             obj.insert_secondary_data = false;
             return
         end
         
-        % Initialize counter
-        objConfIdx = 1;
-        
-        % Loop through each secondary source and put a configuration
-        % struct into obj.secondary_data_config for each data source
-        % that overlaps obj.date_start and obj.date_end
-        for i = 1:numel( sec_conf );
-            % Overlap flag
-            data_start = datenum( sec_conf( i ).start_date, ...
-                'YYYY-mm-DD HH:MM');
-            data_end = datenum( sec_conf( i ).end_date, ...
-                'YYYY-mm-DD HH:MM');
-            overlap_flag = data_start <= obj.date_end && ...
-                data_end >= obj.date_start ;
-            % Merge into fluxall flag
-            merge_flag = sec_conf.merge_30min;
-            if overlap_flag && merge_flag
-                if objConfIdx==1
-                    % First iteration changes empty array to struct
-                    obj.secondary_data_config = sec_conf( i );
-                else
-                    obj.secondary_data_config( objConfIdx ) = sec_conf( i );
+        function obj = conf_within_dates( conf_in, obj, conf_field )
+            % Initialize counter and flag indicating whether the flux or 
+            % secondary data range in config overlaps obj.date_start and 
+            % obj.date_end
+            objConfIdx = 1;
+            overlap_flag = false;
+            
+            % Loop through each secondary source and put a configuration
+            % struct into obj.secondary_data_config for each data source
+            % that overlaps obj.date_start and obj.date_end
+            for i = 1:numel( conf_in );
+                data_start = datenum( conf_in( i ).start_date, ...
+                    'YYYY-mm-DD HH:MM');
+                data_end = datenum( conf_in( i ).end_date, ...
+                    'YYYY-mm-DD HH:MM');
+                overlap_flag = data_start <= obj.date_end && ...
+                    data_end >= obj.date_start ;
+                % Merge into fluxall flag
+                merge_flag = conf_in( i ).merge_30min;
+                if overlap_flag && merge_flag
+                    if objConfIdx==1
+                        % First iteration changes empty array to struct
+                        obj.( conf_field ) = conf_in( i );
+                    else
+                        obj.( conf_field )( objConfIdx ) = conf_in( i );
+                    end
+                    objConfIdx = objConfIdx + 1;
                 end
-                objConfIdx = objConfIdx + 1;
             end
-        end
-        
-    end
+        end %conf_within_dates
+    end %get_logger_config
 
     % --------------------------------------------------
 
@@ -256,24 +263,29 @@ methods
             % Get the secondary data by file/datalogger type
             switch lower( conf.conv_file_fmt )
                 case 'toa5'
+                    % Get loggernet data (if files exist)
                     secondary_files = get_loggernet_filenames( ...
                         obj.sitecode, obj.date_start, obj.date_end, 'TOA5', ...
                         'subdir', conf.conv_file_loc );
-                    i_data = combine_and_fill_datalogger_files( ...
-                        obj.sitecode, 'TOA5', ...
-                        'file_names', secondary_files, ...
-                        'resolve_headers', conf.resolve_headers, ...
-                        'datalogger_name', conf.name );
+                    if ~isempty( secondary_files )
+                        i_data = combine_and_fill_datalogger_files( ...
+                            obj.sitecode, 'TOA5', ...
+                            'file_names', secondary_files, ...
+                            'resolve_headers', conf.resolve_headers, ...
+                            'datalogger_name', conf.name );
+                    end
                 case 'cr23x'
-                    % Get PJC and PJG data from cr23x
+                    % Get cr23x data (if files exist)
                     secondary_files = get_cr23x_filenames( ...
                         obj.sitecode, obj.date_start, obj.date_end, ...
                         conf.conv_file_loc );
-                    i_data = combine_and_fill_datalogger_files( ...
-                        obj.sitecode, 'cr23x', ...
-                        'file_names', secondary_files, ...
-                        'resolve_headers', conf.resolve_headers, ...
-                        'datalogger_name', conf.name );
+                    if ~isempty( secondary_files )
+                        i_data = combine_and_fill_datalogger_files( ...
+                            obj.sitecode, 'cr23x', ...
+                            'file_names', secondary_files, ...
+                            'resolve_headers', conf.resolve_headers, ...
+                            'datalogger_name', conf.name );
+                    end
                 case 'other'
                     secondary_files = {};
                     % Get data from sites we don't manage
@@ -292,7 +304,7 @@ methods
         % a 30min table to add to obj.data_30min_secondary
         secondary_data = table_array{ 1 };
         if numel( table_array ) > 1
-            for j = 1:numel( table_array )
+            for j = 2:numel( table_array )
                 secondary_data = table_foldin_data( ...
                     secondary_data, table_array{ j });
             end
@@ -338,7 +350,7 @@ methods
             %obj.date_end = min( max( tstamps ), obj.date_end );
 
             [ this_year, ~, ~, ~, ~, ~ ] = datevec( obj.date_start );
-            fname = fullfile( 'C:\Research_Flux_Towers\FluxOut\TOB1_data\', ...
+            fname = fullfile( getenv('FLUXROOT'), 'FluxOut/TOB1_data/', ...
                 sprintf( '%s_TOB1_%d_filled.mat', ...
                 char( obj.sitecode ), ...
                 this_year ) );
@@ -348,12 +360,14 @@ methods
             % year (only goes to Dec 31, 23:30)
             all_data = all_data( all_data.timestamp <= obj.date_end, : );
         else
+            % If receiving memory errors, reduce period_n_days
             [ result, all_data ] = ...
                 UNM_process_10hz_main( obj.sitecode, ...
                 obj.date_start, ...
                 obj.date_end, ...
                 'lag', obj.lag, ...
-                'rotation', obj.rotation);
+                'rotation', obj.rotation);%, ...
+                %'period_n_days', 5);
         end
         % Card_data_processor takes tables, so change if need be
         if isa( all_data, 'dataset' )
@@ -402,7 +416,9 @@ methods
         parse_10hz = p.Results.parse_10hz;
         % -----
 
-        % -----
+        % Get the datalogger configurations
+        obj = get_logger_config( obj );
+        
         % if obj has no new data, we must parse the TOA5 and TOB1 data files for
         % the date range requested
         if isempty( obj.data_10hz_avg )
@@ -415,7 +431,6 @@ methods
 
         % Check for secondary data sources ( if we are not ignoring them )
         if obj.insert_secondary_data
-            obj = get_secondary_config( obj );
             % Verify that there is data to add and reset flag if needed
             if numel( obj.secondary_data_config ) == 0
                 fprintf( 'Secondary data sources outside of date_start and date_end. Reset flag.\n');
@@ -463,7 +478,8 @@ methods
             obj = process_10hz_data( obj );
         end
 
-        save( 'CDP_test_restart.mat' )
+        save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', ...\
+            'CDP_test_restart.mat' ));
 
         fprintf( '---------- merging 30-min, 10-hz, and fluxall ----------\n' );
 
@@ -521,7 +537,7 @@ methods
         t_max = max( [ reshape( obj.data_30min.timestamp, [], 1 ); ...
             reshape( obj.data_10hz_avg.timestamp, [], 1 ) ] );
 
-        save( 'cdp226.mat' );
+        save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', 'cdp226.mat' ));
         [ obj.data_30min, obj.data_10hz_avg ] = ...
             merge_tables_by_datenum( obj.data_30min, ...
             obj.data_10hz_avg, ...
