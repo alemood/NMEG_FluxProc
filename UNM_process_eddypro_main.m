@@ -106,14 +106,34 @@ fname = listing(f_i).name;
 fname = fullfile(getenv('EPROOT'),fname);
 all_data = eddypro_2_table( fname );
 
+%%
 %Save file if something goes wrong
 outfile = fullfile( get_out_directory( sitecode ), ...
                     'ep_data', ...
                     sprintf( '%s_ep_%d.mat', ...
-                             get_site_name( sitecode ), year ) );
-
-save( outfile, 'all_data' );
-
+                    get_site_name( sitecode ), year ) );
+                
+if exist(outfile) ~= 2
+    disp(['No ', num2str(year) , ' ep.mat exists for ', ...
+        get_site_name(sitecode) ] );
+    disp(['Creating flux .mat file for ', num2str(year) ]);
+    save( outfile , 'all_data');
+else
+    oldfile =  importdata ( outfile );
+    
+    if  isa(all_data,'dataset')
+        all_data = dataset2table(all_data);
+    end
+    
+    if isa( oldfile, 'dataset')
+        oldfile = dataset2table( oldfile);
+    end
+    
+    newfile = table_append_common_vars ( oldfile , all_data );
+    save( outfile, 'newfile' );
+end
+%%
+%FIXME - Should file be named based on last observation?
 ts_start = min(all_data.timestamp);
 ts_start = datestr(ts_start,'yyyy_mm_dd_HHMM');
 
@@ -121,22 +141,18 @@ ts_start = datestr(ts_start,'yyyy_mm_dd_HHMM');
       fullfile(getenv('FLUXROOT'),'SiteData',char(sitecode),...
       'ep_data',['ep_',char(sitecode),'_',ts_start,'.csv']))
   
- delete(fullfile(getenv('EPROOT'),['eddypro_',char(sitecode),'*']),fullfile(getenv('EPROOT'),'processing*'));
+ %delete(fullfile(getenv('EPROOT'),['eddypro_',char(sitecode),'*']),fullfile(getenv('EPROOT'),'processing*'));
 
  %Save to .mat file. Not sure if this is necessary right now.
  %Check to see if directory exists
- outfolder = fullfile(getenv('FLUXROOT'),'SiteData', char( sitecode ), ...
-			 'ep_data');
-if exist(outfolder) ~= 7
-    disp(['creating ', outfolder]);
-    [result, msg, msgid] = mkdir(outfolder);
-end
+% outfolder = fullfile(getenv('FLUXROOT'),'SiteData', char( sitecode ), ...
+%			 'ep_data');
+% if exist(outfolder) ~= 7
+%     disp(['creating ', outfolder]);
+%     [result, msg, msgid] = mkdir(outfolder);
+% end
 
-outfile = fullfile( get_out_directory( sitecode ), ...
-                    'ep_data', ...
-                    sprintf( '%s_ep_%d.mat', ...
-                             get_site_name( sitecode ), year ) );
-save( outfile, 'all_data' );
+
 
 
 %Find newly created eddypro output based on process date

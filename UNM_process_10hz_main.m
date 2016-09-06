@@ -153,8 +153,29 @@ all_data.jday = all_data.timestamp - datenum( year, 1, 1 ) + 1;
 outfile = fullfile( get_out_directory( sitecode ), ...
                     'TOB1_data', ...
                     sprintf( '%s_TOB1_%d.mat', ...
-                             get_site_name( sitecode ), year ) );
-save( outfile, 'all_data' );
+                    get_site_name( sitecode ), year ) );
+                
+if exist(outfile) ~= 2
+    disp(['No ', num2str(year) , ' .mat exists for ', ...
+        get_site_name(sitecode) ] );
+    disp(['Creating flux .mat file for ', num2str(year) ]);
+    save( outfile , 'all_data');
+else
+    oldfile =  importdata ( outfile );
+    
+    if  isa(all_data,'dataset')
+        all_data = dataset2table(all_data);
+    else
+        all_data = all_data;
+    end
+    
+    if isa( oldfile, 'dataset')
+        oldfile = dataset2table( oldfile);
+    end
+    
+    newfile = table_append_common_vars ( oldfile , all_data );
+    save( outfile, 'newfile' );
+end
 
 % FIXME - At this point reading in the TOB1_data file ("outfile") and then
 % appending the new data ("all_data") before writing "filled" files would
@@ -165,7 +186,7 @@ save( outfile, 'all_data' );
 % format to match existing FLUX_all_YYYY.xls files
 % for some reason, two time columns
 timestamp2 = all_data.timestamp;
-timestamp2 = dataset( timestamp2) ;
+timestamp2 = table( timestamp2) ;
 all_data = [ timestamp2, all_data ];
 % only one iok column
 if size( all_data.iok, 2 ) > 1
@@ -175,10 +196,14 @@ end
 % -----
 % write filled data to disk
 % -----
+%FIXME - Probably not necessary to write a 'filled' file. Why do we need
+%two serial timestamps? This is used for aligning variables when two
+%datasets are merged (30 min,10hz, and eddypro data), but seems useless here
 
 disp( 'exporting dataset' );
-export( all_data, ...
-        'file', strrep( outfile, '.mat', '_filled.txt' ) );
+writetable( all_data, ...
+         strrep( outfile, '.mat', '_filled.txt' ),...
+         'Delimiter','\t');
 disp( 'writing .mat file' );
 save( strrep( outfile, '.mat', '_filled.mat' ), 'all_data' );
 

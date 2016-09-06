@@ -1,10 +1,10 @@
 function T = eddypro_2_table( varargin )
-% TOA5_2_TABLE - parse a Campbell Scientific TOA5 file to a matlab table
+% EDDYPRO_2_TABLE - parse an EddyPro full output CSV file to a matlab table
 % array. 
 %
 % FIXME! - documentation and cleanup
 %
-% Uses parse_TOA5_file_headers to determine variable names, variable units,
+% Uses parse_edypro_file_headers to determine variable names, variable units,
 % file size, and delimiter.  Adds a 'timestamp' variable of the file's
 % timetamps converted to Matlab serial datenumbers.  Uses clean_up_varnames
 % to convert variable names to legal Matlab variables.
@@ -24,10 +24,10 @@ function T = eddypro_2_table( varargin )
 if nargin==0
     % no files specified; prompt user to select files
     [ fname, pathname, filterindex ] = uigetfile( ...
-        { '*.dat','Datalogger files (*.dat)' }, ...
-        'select TOA5 file to open', ...
+        { '*.*','All files' }, ...
+        'select CSV file to open', ...
          fullfile( getenv('FLUXROOT'), 'SiteData' ), ...
-        'MultiSelect', 'off' );
+        'MultiSelect', 'on' );
     fname =  fullfile( pathname, fname );
 else
     fname = varargin{1};
