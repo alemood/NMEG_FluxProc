@@ -173,8 +173,8 @@ else
         oldfile = dataset2table( oldfile);
     end
     
-    newfile = table_append_common_vars ( oldfile , all_data );
-    save( outfile, 'newfile' );
+    all_data = table_foldin_data( oldfile , all_data );
+    save( outfile, 'all_data' );
 end
 
 % FIXME - At this point reading in the TOB1_data file ("outfile") and then

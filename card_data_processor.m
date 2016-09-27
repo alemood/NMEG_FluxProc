@@ -387,7 +387,7 @@ methods
 
     % --------------------------------------------------
     
-    function obj = process_10hz_eddypro ( obj )
+    function [ obj] = process_10hz_eddypro ( obj )
         
         
         if obj.data_eddypro_already_processed
@@ -416,8 +416,15 @@ methods
             %H (4), LE(11), co2_flux (14). h20_flux (17), co2 vars
             %(36-38),h2o vars(41-43)
             
-            obj.data_eddypro = all_data(:,[8,11,14,17,36,37,38,...
-                41,42,43,98,100,102,104,176]);
+%             obj.data_eddypro = all_data(:,[8,11,14,17,36,37,38,...
+%                 41,42,43,98,100,102,104,176]);
+      
+            obj.data_eddypro = all_data(:,{'timestamp',...
+                'un_co2_flux' 'co2_flux',...
+                'un_H', 'H',...
+                'un_LE', 'LE',...
+                'un_h2o_flux', 'h2o_flux'});
+          
     end
     
     % --------------------------------------------------
@@ -534,10 +541,10 @@ methods
             if ep_date_flag == 1;
                 obj.date_start = eddypro_date_start;
             end
-            obj = process_10hz_eddypro ( obj );
+            obj = process_10hz_eddypro ( obj );        
             fprintf( '--- folding in 30-minute data from eddypro ---\n' );
             obj.data_30min = table_foldin_data(...
-                obj.data_30min, obj.data_eddypro );
+                obj.data_30min, obj.data_eddypro );         
         end
         save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', ...\
             'CDP_test_restart.mat' ));

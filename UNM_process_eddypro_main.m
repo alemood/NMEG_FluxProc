@@ -91,12 +91,14 @@ eddypro_exe = fullfile('C:','"Program Files (x86)"',...
     'LI-COR','EddyPro-6.1.0','bin','eddypro_rp');
 eddypro_cmd = [eddypro_exe,' ',eddypro_proj];
 
+
 tic
 fprintf( '---------- processing in EddyPro ----------\n' );
 [ep_status ep_result]=system(eddypro_cmd)    %Run EddyPro. May need to change environment
 toc
 
 %Get list of full_output eddypro files in site dir
+if ep_status == 0
 listing= dir(fullfile('C:','Research_Flux_Towers',...
     'SiteData',char(sitecode),...
     'eddypro_out','*full_output*'));
@@ -128,46 +130,32 @@ else
     if isa( oldfile, 'dataset')
         oldfile = dataset2table( oldfile);
     end
+    %FIXME - Either EP is processing weird or this is reprocessing a cards
+    %as year-to-date time periods. table_append_common_vars may be
+    %innapropriate as it just vertically concatenates new and existing
+    %tables. Table_fill_timestamps would be better but needs to be changed
+    %to make sure tables with values are used instead of NaN.
+    %Table_foldin_data is maybe even better. (merge by datenum
+    %   1.merge by datenum
+    %   2. table_foldin_data
     
-    newfile = table_append_common_vars ( oldfile , all_data );
-    save( outfile, 'newfile' );
+    newfile = table_foldin_data(oldfile, all_data);
+    all_data = newfile ; %Rename to allow uploaded data in CDP to be loaded as 'all_data'. 
+    %newfile = table_append_common_vars ( oldfile , all_data );
+    save( outfile, 'all_data' );
 end
-%%
-%FIXME - Should file be named based on last observation?
-ts_start = min(all_data.timestamp);
-ts_start = datestr(ts_start,'yyyy_mm_dd_HHMM');
+
+ts_end = max(all_data.timestamp);
+ts_end = datestr(ts_end,'yyyy_mm_dd_HHMM');
 
  [SUCCESS,MESSAGE,MESSAGEID] = movefile(fname,...
       fullfile(getenv('FLUXROOT'),'SiteData',char(sitecode),...
-      'ep_data',['ep_',char(sitecode),'_',ts_start,'.csv']))
+      'ep_data',['ep_',char(sitecode),'_',ts_end,'.csv']))
+else
+    warning('EddyPro ran into issues and could not process')
+end
   
  %delete(fullfile(getenv('EPROOT'),['eddypro_',char(sitecode),'*']),fullfile(getenv('EPROOT'),'processing*'));
 
- %Save to .mat file. Not sure if this is necessary right now.
- %Check to see if directory exists
-% outfolder = fullfile(getenv('FLUXROOT'),'SiteData', char( sitecode ), ...
-%			 'ep_data');
-% if exist(outfolder) ~= 7
-%     disp(['creating ', outfolder]);
-%     [result, msg, msgid] = mkdir(outfolder);
-% end
-
-
-
-
-%Find newly created eddypro output based on process date
-
-%  f_tstamp=regexpi(fname,'((?:\d*\.)?\d+)','match');
-%  
-%  datevec(cell2mat(f_tstamps),'yyyymmddHHMMSS')
-%  
-%  %Match beginning of processing timestamp to the nearest minute to find file
-%  isequal(ts(1:5),ep_t(1:5))
-
-% Read in newly processed data 
-% fname = fullfile('C:','Research_Flux_Towers',...
-%             'SiteData',obj.sitecode,...
-%             'eddypro_out',);
-
-
+ 
 end
