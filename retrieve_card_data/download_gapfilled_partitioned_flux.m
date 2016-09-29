@@ -13,6 +13,9 @@ function result = download_gapfilled_partitioned_flux( job_num)
 % NOTE: Deprecated as of July 2013 -- REddyProc performs gapfill and
 % partitioning locally.
 %
+% NOTE 2: Actually - we still use MPI EddyProc to get Lasslop partitioning,
+% so this file is still useful - GEM
+%
 % USAGE
 %   result = download_gapfilled_partitioned_flux( job_num )
 %
@@ -44,7 +47,8 @@ cmd = sprintf( ['start C:\\cygwin64\\bin\\bash --login -c ' ...
 % make system call
 [s, r] = dos(cmd);
 
-fprintf( 'Downloading gapfilled & partitioned fluxes...' );
+fprintf( 'Downloading gapfilled & partitioned fluxes...\n' );
+fprintf( 'If this hangs try dos2unix.exe trick on the bash script...\n' );
 
 % do not continue until the blocking file is removed
 pause on;
