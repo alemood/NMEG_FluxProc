@@ -78,12 +78,12 @@ fprintf( 1, 'writing %s...\n', fname );
 
 fid = fopen( fname, 'w+' );
 
-fprintf( fid, 'Site name: %s\n', aflx_site_name );
-fprintf( fid, 'Email: %s\n', email );
-fprintf( fid, 'Created: %s\n', datestr( now() ) );
-fprintf( fid, 'Processing code URL: %s\n', gitInfo.url );
-fprintf( fid, 'Repository branch: %s\n', gitInfo.branch );
-fprintf( fid, 'Last commit hash: %s\n', gitInfo.hash );
+%fprintf( fid, 'Site name: %s\n', aflx_site_name );
+%fprintf( fid, 'Email: %s\n', email );
+%fprintf( fid, 'Created: %s\n', datestr( now() ) );
+%fprintf( fid, 'Processing code URL: %s\n', gitInfo.url );
+%fprintf( fid, 'Repository branch: %s\n', gitInfo.branch );
+%fprintf( fid, 'Last commit hash: %s\n', gitInfo.hash );
 
 % Write variables name and unit headers
 tok_str = sprintf( '%s%%s', delim );
@@ -93,8 +93,8 @@ var_names = af_tbl.Properties.VariableNames;
 % these 'p's back to '.'s -- identify by '.' between two digits
 var_names = regexprep( var_names, '([0-9])p([0-9])', '$1\.$2');
 fprintf( fid, fmt, var_names{:} );
-units = af_tbl.Properties.VariableUnits;
-fprintf( fid, fmt, units{:} );
+%units = af_tbl.Properties.VariableUnits;
+%fprintf( fid, fmt, units{:} );
 
 % This could work, but fmt would have to be specified for each column
 % Also, it is SLOWER than dlmwrite
