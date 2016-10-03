@@ -12,10 +12,10 @@ function [ var_names, var_units, file_lines, first_data_line, delim ] = ...
 %
 % USAGE
 %    [ var_names, var_units, file_lines, first_data_line, delim ] = ...
-%        parse_TOA5_file_headers( infile );
+%        parse_eddypro_file_headers( infile );
 %
 % INPUTS
-%    fname: full path to a TOA5 file
+%    fname: full path to a CSV file
 %
 % OUTPUTS
 %    var_names: cell array of strings; the variable names present in the file
@@ -23,10 +23,11 @@ function [ var_names, var_units, file_lines, first_data_line, delim ] = ...
 %    file_lines: cell array of strings; the contents of the file, one line
 %        per cell
 %    first_data_line: double; the line number of the first data-containing
-%        line of the TOA5 file
-%    delim: character; the delimiter used in the TOA5 file
+%        line of the CSV file
+%    delim: character; the delimiter used in the CSV file
 %
-% author: Timothy W. Hilton, UNM, Feb 2012
+% author: Alex Moody, UNM, May 2016
+% modified from: parse_TOA5_file_headers, Timothy W. Hilton, UNM, Feb 2012
 
 n_header_lines = 3;
 first_data_line = n_header_lines + 1;
@@ -50,13 +51,14 @@ var_names = regexp( file_lines{ 2 }, re, 'tokens' );
 var_names = [ var_names{ : } ];  % 'unnest' the cell array
 var_units = regexp( file_lines{ 3 }, re, 'tokens' );
 var_units = [ var_units{ : } ];  % 'unnest' the cell array
-%not_empty = not( cellfun( @isempty, var_names ) );
-%var_names = var_names( not_empty );
+not_empty = not( cellfun( @isempty, var_names ) );
+var_names = var_names( not_empty );
 %var_units = var_units( not_empty );
 
 % remove remaining quotation marks
+% May not be necessary for CSV files. Remnant from parent TOA5 .m file
 var_names = strrep( var_names, '"', '' );
 var_units = strrep( var_units, '"', '' );
-
-
-
+% Remove '*' from friction velocity and scaling temp eddypro vars
+var_names = strrep( var_names, '*', '_star')
+var_names = strrep( var_names, '%', '_prct')
