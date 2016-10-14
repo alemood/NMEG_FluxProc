@@ -1,7 +1,11 @@
 function [ var_names, var_units, file_lines, first_data_line, delim ] = ...
         parse_eddypro_file_headers( fname )
-% PARSE_EDDYPRO_FILE_HEADERS - parse variable names and units for a
-% specified EddyPro full output file.  
+
+% PARSE_EDDYPRO_FILE_HEADERS - parse variable names and units for a specified TOA5
+%   file.  
+%
+% FIXME - documentation and cleanup. Also, could we make an existing script
+% work for this?
 %
 % Returns cell array of variable names, cell array of variable units, cell array
 % of full text of file, one line per cell, the first line number that contains
@@ -59,6 +63,3 @@ var_units = strrep( var_units, '"', '' );
 % Remove '*' from friction velocity and scaling temp eddypro vars
 var_names = strrep( var_names, '*', '_star')
 var_names = strrep( var_names, '%', '_prct')
-
-
-

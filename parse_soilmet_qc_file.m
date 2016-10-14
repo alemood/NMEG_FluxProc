@@ -1,4 +1,4 @@
-function tbl = parse_fluxall_qc_file( sitecode, year )
+function tbl = parse_soilmet_qc_file( sitecode, year )
 % PARSE_FLUXALL_QC_FILE - parse tab-delimited ASCII QC file to matlab dataset
 %
 %   
@@ -20,12 +20,10 @@ function tbl = parse_fluxall_qc_file( sitecode, year )
 % author: Timothy W. Hilton, UNM, April 2012
 
 site = get_site_name( sitecode );
-if isstr(year)
-    year = str2num(year);
-end
+
 qcfile = fullfile( get_site_directory( sitecode ), ...
-                   'processed_flux', ...
-                   sprintf( '%s_flux_all_%d_qc.txt', site, year ) );
+                   'processed_soil', ...
+                   sprintf( '%s_%d_soilmet_qc.txt', site,year ) );
 
 [ ~, fname, ext ] = fileparts( qcfile );
 fprintf( 'reading %s... ', qcfile );
@@ -33,18 +31,18 @@ fprintf( 'reading %s... ', qcfile );
 % count the number of columns in the file - this varies between sites
 fid = fopen( qcfile, 'r' );
 header_line = fgetl( fid );
-n_cols = numel( regexp( header_line, '\t', 'split' ) );
+n_cols = numel( regexp( header_line, ',', 'split' ) );
 
 fmt = repmat( '%f', 1, n_cols );
 %fmt = '%f';
 tbl = readtable(  qcfile, ...
-                 'Delimiter', '\t', ...
+                 'Delimiter', ',', ...
                  'Format', fmt );
 
 tbl = replace_badvals( tbl, [-9999], 1e-6 );
 
 tbl.timestamp = datenum( tbl.year, tbl.month, tbl.day, ...
-    tbl.hour, tbl.minute, tbl.second );
+    tbl.hour, tbl.min, tbl.second );
+%fprintf( 'done\n');
+end
 
-
-fprintf( 'done\n');

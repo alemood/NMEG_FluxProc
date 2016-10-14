@@ -3,27 +3,42 @@
 % fact, corrected.  I intend to turn this into a stand-alone function to run at
 % the end of Ameriflux_File_Maker.  -TWH, June 2013
 
-sites = UNM_sites.PJ;
-years = 2008:2013;
+sites = UNM_sites.PPine;
+years = 2007:2014;
 
-parse_files = false;
+parse_files = true;
 check_FH2O = false;
-check_Rg_daily_cycle = true;
+check_Rg_daily_cycle = false;
 check_precip = false;
+check_ustar = true;
  
 if parse_files
     % initialize empty cell array
-    ca = cell( 1, max( sites ) );
-    for this_site = sites
-        
-        ca{ this_site } = ...
-            assemble_multi_year_ameriflux( this_site, years,...
-                                           'suffix', 'with_gaps', ...
-                                           'binary_data', false );
-        
+    ca = cell( 1, length(sites) );
+    for i = 1:length(sites)
+        this_site = sites(i);
+        ca{ i }   = ...
+            assemble_multiyear_ameriflux( this_site, years,...
+                                           'suffix', 'with_gaps' )                                           
     end
 end
 
+ca2=ca{1,1};
+clear ca
+ca = ca2; 
+clear ca2
+
+if check_ustar
+    gscatter(ca.timestamp,ca.USTAR,~isfinite(ca.FC),...
+        'rb',... %color
+        '..',...  %symbol
+        15,...
+        'doleg','on');
+    title(get_site_name(thissite));
+    datetick('x')
+    ylabel('USTAR')
+    ylim([0 1]);
+end
 
 %----------------------------------------------------------------------
 % plot H2O flux to check values are <= 200
