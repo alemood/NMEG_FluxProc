@@ -41,9 +41,11 @@ args.addParameter( 'write_daily_files', true, @(x) ( islogical(x) & ...
 args.addParameter( 'process_soil_data', false, @(x) ( islogical(x) & ...
                                                   numel( x ) ==  1 ) );
 args.addParameter( 'gf_part_source', 'eddyproc', @(x) ( isstr(x) ) );
+args.addParameter( 'version', 'in_house', @ischar);
 args.parse( sitecode, year, varargin{ : } );
 sitecode = args.Results.sitecode;
 year = args.Results.year;
+version = args.Results.version;
 %-----
 
 site = char( sitecode );
@@ -266,15 +268,20 @@ amflux_gf( :, {'GPP_F_MR2005','RECO_MR2005','GPP_GL2010','RECO_GL2010', ...
 amflux_gaps( :, {'GPP_F_MR2005','RECO_MR2005','GPP_GL2010','RECO_GL2010', ...
     'RECO_GL2010_amended', 'amended_FLAG', 'GPP_MR2005_ecb', ...
     'RECO_MR2005_ecb','NEE_MR2005_ecb', ...
-    'GPP_GL2010_amended_ecb','RECO_GL2010_amended_ecb','NEE_GL2010_amended_ecb',...
-    'GPP', 'RECO'}) = [];
+    'GPP_GL2010_amended_ecb','RECO_GL2010_amended_ecb',...
+    'NEE_GL2010_amended_ecb'}) = [];
+
+if strcmp( version , 'fluxnet' )
+    amflux_gf ( : , {'GPP' , 'RECO' }) = [];
+    amflux_gaps ( : , {'GPP' , 'RECO' }) = [];
+end    
 
 if args.Results.write_files
     UNM_Ameriflux_write_file( sitecode, year, amflux_gf, ...
-        'mlitvak@unm.edu', 'gapfilled' );
+        'mlitvak@unm.edu', 'gapfilled' , 'version' , version );
     
     UNM_Ameriflux_write_file( sitecode, year, amflux_gaps, ...
-        'mlitvak@unm.edu', 'with_gaps' );
+        'mlitvak@unm.edu', 'with_gaps' , 'version' , version );
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

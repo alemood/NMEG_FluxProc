@@ -351,6 +351,7 @@ if strcmp( logger_name, 'flux' )
         diary off
         return
     end   
+   
     % run RemoveBadData to create for gapfilling file, qc file.
     fprintf(1, '\n----------\n');
     fprintf(1, 'starting UNM_RemoveBadData...\n');

@@ -20,7 +20,9 @@ function tbl = parse_fluxall_qc_file( sitecode, year )
 % author: Timothy W. Hilton, UNM, April 2012
 
 site = get_site_name( sitecode );
-
+if isstr(year)
+    year = str2num(year);
+end
 qcfile = fullfile( get_site_directory( sitecode ), ...
                    'processed_flux', ...
                    sprintf( '%s_flux_all_%d_qc.txt', site, year ) );

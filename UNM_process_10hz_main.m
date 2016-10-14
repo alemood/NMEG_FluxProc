@@ -173,6 +173,14 @@ else
         oldfile = dataset2table( oldfile);
     end
     
+    if size( all_data.iok, 2 ) > 1
+    all_data.iok = all_data.iok( :, 2 );
+    end
+    
+    if size( oldfile.iok, 2 ) > 1
+        oldfile.iok = oldfile.iok( :, 2 );
+    end
+    
     all_data = table_foldin_data( oldfile , all_data );
     save( outfile, 'all_data' );
 end

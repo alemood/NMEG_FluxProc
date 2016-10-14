@@ -3,12 +3,12 @@
 
 sitelist = {UNM_sites.GLand, UNM_sites.SLand, UNM_sites.JSav,...
     UNM_sites.PPine, UNM_sites.MCon };
-sitelist = {UNM_sites.SLand, UNM_sites.GLand};
-yearlist = 2007;
+sitelist = {UNM_sites.PJ};
+yearlist = 2014;
 
 % True, overwrite files; False; do not overwrite
-write_qc = true;
-write_gf = true;
+write_qc = false;
+write_gf = false;
 old_fluxall = false;
 
 for i = 1:length(sitelist);

@@ -177,14 +177,18 @@ end
 
 % FIXME - Potentially missing: APAR, PAR_out, PAR_DIFF, Rg_DIFF.
 
+%Add flag for when it could be considered sunny, for teasing out overcast
+%periods.
+PAR_sun = qc_tbl.Par_Avg > 800; %This is an arbitrary threshold
+
 met_nongf = [ qc_tbl.u_star, qc_tbl.wnd_dir_compass, qc_tbl.wnd_spd, ...
-              qc_tbl.atm_press, qc_tbl.Par_Avg, ...%qc_tbl.PAR_out, qc_tbl.NR_tot, qc_tbl.lw_incoming
+              qc_tbl.atm_press, qc_tbl.Par_Avg, PAR_sun,...%qc_tbl.PAR_out, qc_tbl.NR_tot, qc_tbl.lw_incoming
               qc_tbl.sw_outgoing, qc_tbl.lw_outgoing ];
 headers = { 'USTAR', 'WD', 'WS', ...
-            'PA', 'PPFD_IN', ...%'PAR_out', 'NETRAD_old', 'LW_IN'
+            'PA', 'PPFD_IN', 'SUN_FLAG' ...%'PAR_out', 'NETRAD_old', 'LW_IN'
             'SW_OUT', 'LW_OUT' };
 units = { 'm/s', 'deg', 'm/s', ...
-          'kPa', 'mumol/m2/s', ...% 'mumol/m2/s', 'W/m2', 'W/m2',...
+          'kPa', 'mumol/m2/s','--', ...% 'mumol/m2/s', 'W/m2', 'W/m2',...
           'W/m2', 'W/m2'};
       
 % Make table

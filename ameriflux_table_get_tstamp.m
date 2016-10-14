@@ -30,6 +30,9 @@ if ismember('TIMESTAMP', tab.Properties.VariableNames)
     
     tab.timestamp = datenum( num2str( tab.TIMESTAMP ), 'YYYYmmDDHHMMSS' );
     
+elseif ismember('TIMESTAMP_END', tab.Properties.VariableNames)  % AMP format changes Sept. 2016
+    tab.timestamp = datenum( num2str( tab.TIMESTAMP_END), 'YYYYmmDDHHMM' );
+    
 else % The old files have no timestamp
     previous_year_31Dec = datenum( tab.YEAR, 1, 0 );
     hours_per_day = 24;

@@ -22,8 +22,12 @@ function result = UNM_Ameriflux_write_file( sitecode, ...
 %         Default is mlitvak@unm.edu
 %     outdir: char; full path to directory to write ameriflux files to.
 %         Defaults to get_out_directory( sitecode ).
+%     version: char; 'in_house' or 'fluxnet', to specify header
+%         formatting.'in_house' is more verbose, including Git info, units, and
+%         partitioning
 %
 % author: Timothy W. Hilton, UNM, 2012
+% modified by: Alex Moody, UNM, Oct 2016
 
 
 [ this_year, ~, ~ ] = datevec( now );
@@ -37,6 +41,7 @@ args.addRequired( 'af_tbl', @(x) isa( x, 'table' ) );
 args.addRequired( 'fname_suffix', @ischar );
 args.addParameter( 'email', 'mlitvak@unm.edu', @ischar );
 args.addParameter( 'outdir', '', @ischar );
+args.addParameter( 'version', 'in_house' , @ischar );
 
 args.parse( sitecode, year, af_tbl,  varargin{ : } );
 
@@ -46,6 +51,7 @@ af_tbl = args.Results.af_tbl;
 fname_suffix = args.Results.fname_suffix;
 email = args.Results.email;
 outdir = args.Results.outdir;
+version = args.Results.version;
 
 % Now create and write the output file
 result = 1;
@@ -74,16 +80,18 @@ fname = fullfile( outdir, ...
                            year, ...
                            fname_suffix ) );
 
-fprintf( 1, 'writing %s...\n', fname );
+fprintf( 1, 'writing %s for %s use...\n', fname, version );
 
 fid = fopen( fname, 'w+' );
 
-%fprintf( fid, 'Site name: %s\n', aflx_site_name );
-%fprintf( fid, 'Email: %s\n', email );
-%fprintf( fid, 'Created: %s\n', datestr( now() ) );
-%fprintf( fid, 'Processing code URL: %s\n', gitInfo.url );
-%fprintf( fid, 'Repository branch: %s\n', gitInfo.branch );
-%fprintf( fid, 'Last commit hash: %s\n', gitInfo.hash );
+if strcmp(version,'in_house')  
+fprintf( fid, 'Site name: %s\n', aflx_site_name );
+fprintf( fid, 'Email: %s\n', email );
+fprintf( fid, 'Created: %s\n', datestr( now() ) );
+fprintf( fid, 'Processing code URL: %s\n', gitInfo.url );
+fprintf( fid, 'Repository branch: %s\n', gitInfo.branch );
+fprintf( fid, 'Last commit hash: %s\n', gitInfo.hash );
+end
 
 % Write variables name and unit headers
 tok_str = sprintf( '%s%%s', delim );
@@ -93,8 +101,11 @@ var_names = af_tbl.Properties.VariableNames;
 % these 'p's back to '.'s -- identify by '.' between two digits
 var_names = regexprep( var_names, '([0-9])p([0-9])', '$1\.$2');
 fprintf( fid, fmt, var_names{:} );
-%units = af_tbl.Properties.VariableUnits;
-%fprintf( fid, fmt, units{:} );
+
+if strcmp(version,'in_house')
+units = af_tbl.Properties.VariableUnits;
+fprintf( fid, fmt, units{:} );
+end
 
 % This could work, but fmt would have to be specified for each column
 % Also, it is SLOWER than dlmwrite
@@ -110,7 +121,11 @@ fclose( fid );
 
 % Beware of ints when converting table to array!
 % Use high precision so TIMESTAMP is represented correctly
-data = table2array( af_tbl );
+if strcmp(version,'fluxnet')
+    data = table2array( af_tbl(2:end,:) );
+else
+   data = table2array( af_tbl );
+end
 data( isnan( data ) ) = -9999;
 dlmwrite( fname, data, '-append', ...
           'Delimiter', delim, ...
