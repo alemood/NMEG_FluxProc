@@ -239,16 +239,16 @@ end
 % Note that sometimes we don't want to export all the GPP/RECO columns
 % Select what we want and remove the ones we don't want...
 if sitecode==UNM_sites.MCon || sitecode==UNM_sites.PPine
-    amflux_gf.GPP = amflux_gf.GPP_MR2005_ecb;
-    amflux_gf.RECO = amflux_gf.RECO_MR2005_ecb;
-    amflux_gaps.GPP = amflux_gaps.GPP_MR2005_ecb;
-    amflux_gaps.RECO = amflux_gaps.RECO_MR2005_ecb;
+    amflux_gf.GPP_PI = amflux_gf.GPP_MR2005_ecb;
+    amflux_gf.RECO_PI = amflux_gf.RECO_MR2005_ecb;
+    amflux_gaps.GPP_PI = amflux_gaps.GPP_MR2005_ecb;
+    amflux_gaps.RECO_PI = amflux_gaps.RECO_MR2005_ecb;
     
 else
-    amflux_gf.GPP = amflux_gf.GPP_GL2010_amended_ecb;
-    amflux_gf.RECO = amflux_gf.RECO_GL2010_amended_ecb;
-    amflux_gaps.GPP = amflux_gaps.GPP_GL2010_amended_ecb;
-    amflux_gaps.RECO = amflux_gaps.RECO_GL2010_amended_ecb;
+    amflux_gf.GPP_PI = amflux_gf.GPP_GL2010_amended_ecb;
+    amflux_gf.RECO_PI = amflux_gf.RECO_GL2010_amended_ecb;
+    amflux_gaps.GPP_PI = amflux_gaps.GPP_GL2010_amended_ecb;
+    amflux_gaps.RECO_PI = amflux_gaps.RECO_GL2010_amended_ecb;
     
 end
 

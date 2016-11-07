@@ -104,14 +104,14 @@ end
 
 % create a figure to contain the GUI, use entire screen
 fh = figure( 'Name', fig_name, ...
-             'Position', scrsz .* [ 1, 1, 0.8, 0.8 ], ...  
+             'Position', scrsz .* [ 0.8, 0.8, 0.6, 0.6 ], ...  
              'NumberTitle', 'off', ...
              'ToolBar', 'figure', ...
              'MenuBar', 'none' );
 
 % start with column 5 (UST); first four columns are just time fields
 set( fh, 'UserData', struct( 'cur_col', 5, ...
-                             'FontSize', 20 ) ); 
+                             'FontSize', 14 ) ); 
 
 %--------------------------
 % Construct GUI components
@@ -159,17 +159,20 @@ pbh_next = uicontrol( fh, ...
 %  plot first field
 %--------------------------
 
-plot( axh_gap, data_gaps.DTIME, data_gaps( :, 5 ), '.k', ...
+plot( axh_gap, data_gaps.DTIME, table2array(data_gaps( :, 5 )), '.k', ...
       'MarkerSize', 12 );
-plot( axh_filled, data_filled.DTIME, data_filled( :, 5 ), '.k', ...
+plot( axh_filled, data_filled.DTIME, table2array(data_filled( :, 5 )), '.k', ...
       'MarkerSize', 12 );
 set( axh_gap, 'xlim', [ 0, 366 ] );
 set( axh_filled, 'xlim', [ 0, 366 ] );
 xlabel( axh_gap, 'day of year', ...
         'FontSize', getfield( get( fh, 'UserData' ), 'FontSize' ) );
 title( axh_filled, ...
-       [ data_filled.Properties.VarNames{ 5 }, ' (gapfilled)' ], ...
-       'FontSize', getfield( get( fh, 'UserData' ), 'FontSize' ) );
+    [ data_filled.Properties.VariableNames{ 5 }, ' (gapfilled)' ], ...
+    'FontSize', getfield( get( fh, 'UserData' ), 'FontSize' ) );
+title( axh_gap, ...
+    [ data_gaps.Properties.VariableNames{ 5 }, ' (gaps)' ], ...
+    'FontSize', getfield( get( fh, 'UserData' ), 'FontSize' ) );
 
 %--------------------------
 %  Callbacks for GUI
@@ -265,14 +268,29 @@ title( axh_filled, [ t_str, ' (gapfilled)' ], ...
 function vars = get_var( gapfilled_col, data_gaps, data_filled )
 % helper function to match filled, unfilled Ameriflux data columns
 
-var_filled = data_filled.Properties.VarNames{ gapfilled_col }; 
+var_filled = data_filled.Properties.VariableNames{ gapfilled_col }; 
 
-if strfind( var_filled , 'flag' )
-    var_gaps = '';
-elseif not( ismember( var_filled, data_gaps.Properties.VarNames ) )
-    var_gaps = '';
-else
+% if strfind( var_filled , 'flag' )
+%     var_gaps = '';
+%     %FIXME - This following statement ignores the fact that all filled variables
+%     %end in _F, and this function will never find the corresponding
+%     %unfilled variable. Did this ever work??
+% elseif not( ismember( var_filled, data_gaps.Properties.VariableNames ) )
+%     var_gaps = '';
+% else
+%     var_gaps = var_filled;
+% end
+
+%If filled variable is a flag, there is not corresponding gaps variable
+if ismember( var_filled, data_gaps.Properties.VariableNames )
     var_gaps = var_filled;
+elseif isfinite(regexpi(var_filled,'flag'))    
+    var_gaps = '';
+    %If var_filled does not 
+else
+    [var_gaps gapi] = regexp(var_filled,...
+        '(\w*)(?=(_F))|(\w{1,10}[A-Z])','tokens');
+    var_gaps = var_gaps{1}
 end
 
 vars = struct( 'var_filled', var_filled, ...
@@ -290,7 +308,7 @@ cla( axh_filled );
 
 pal = cbrewer( 'qual', 'Dark2', 8 );
 flag_val = zeros( size( data_filled.DTIME ) );
-flag_col = find( strcmp( data_filled.Properties.VarNames, ...
+flag_col = find( strcmp( data_filled.Properties.VariableNames, ...
                          sprintf( '%s_flag', vars.var_filled ) ) );
 if ~isempty( flag_col )
     flag_val = double( data_filled( :, flag_col ) );

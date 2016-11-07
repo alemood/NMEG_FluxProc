@@ -12,10 +12,10 @@
  
 sitelist_3={UNM_sites.PJ};
 % Years to create files for
-yearlist_3 = 2008:2009;
+yearlist_3 = 2008;2009
 
 sitelist_4 = {UNM_sites.PJ_girdle}
-yearlist = 2009 ;
+yearlist_4 = 2009 ;
 % Partitioned data source
 partmethod = 'eddyproc'; %'Reddyproc'
 % Make daily files? All AF files should be in $FLUXROOT$/Ameriflux_files
