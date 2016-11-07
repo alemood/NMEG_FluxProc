@@ -2,8 +2,6 @@ function T = eddypro_2_table( varargin )
 % EDDYPRO_2_TABLE - parse an EddyPro full output CSV file to a matlab table
 % array. 
 %
-% FIXME! - documentation and cleanup
-%
 % Uses parse_edypro_file_headers to determine variable names, variable units,
 % file size, and delimiter.  Adds a 'timestamp' variable of the file's
 % timetamps converted to Matlab serial datenumbers.  Uses clean_up_varnames
@@ -18,7 +16,7 @@ function T = eddypro_2_table( varargin )
 % SEE ALSO
 %    table, datenum, parse_TOA5_file_headers, clean_up_varnames
 %
-% author: Gregory E. Maurer, UNM, April 2015
+% author: Alex Moody, UNM, April 2016
 % modified from: toa5_2_dataset by Timothy Hilton
 
 if nargin==0

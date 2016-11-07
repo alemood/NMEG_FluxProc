@@ -61,5 +61,5 @@ var_names = var_names( not_empty );
 var_names = strrep( var_names, '"', '' );
 var_units = strrep( var_units, '"', '' );
 % Remove '*' from friction velocity and scaling temp eddypro vars
-var_names = strrep( var_names, '*', '_star')
-var_names = strrep( var_names, '%', '_prct')
+var_names = strrep( var_names, '*', '_star');
+var_names = strrep( var_names, '%', '_prct');

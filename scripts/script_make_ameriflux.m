@@ -11,7 +11,7 @@
 partmethod = 'eddyproc'; %'reddyproc'
 % Make daily files? All AF files should be in $FLUXROOT$/Ameriflux_files
 make_daily = false;
-write_files = true;
+write_files = false;
 process_soil = false;
 version = 'in_house' %'fluxnet'
 showfig = false;
@@ -36,8 +36,8 @@ for k = 5:5
             sitelist = {UNM_sites.New_GLand};
             yearlist = 2010:2015;
         case 5
-            sitelist = {UNM_sites.MCon_SS};
-            yearlist = 2016:2016;
+            sitelist = {UNM_sites.PJ};
+            yearlist = 2016;
     end            
 
 for i = 1:length(sitelist);
