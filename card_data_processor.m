@@ -387,7 +387,7 @@ methods
 
     % --------------------------------------------------
     
-    function obj = process_10hz_eddypro ( obj )
+    function [ obj] = process_10hz_eddypro ( obj )
         
         
         if obj.data_eddypro_already_processed
@@ -541,10 +541,10 @@ methods
             if ep_date_flag == 1;
                 obj.date_start = eddypro_date_start;
             end
-            obj = process_10hz_eddypro ( obj );
+            obj = process_10hz_eddypro ( obj );        
             fprintf( '--- folding in 30-minute data from eddypro ---\n' );
             obj.data_30min = table_foldin_data(...
-                obj.data_30min, obj.data_eddypro );
+                obj.data_30min, obj.data_eddypro );         
         end
         save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', ...\
             'CDP_test_restart.mat' ));

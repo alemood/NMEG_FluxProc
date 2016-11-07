@@ -2,9 +2,8 @@
 %clear all;
 
 sitelist = {UNM_sites.GLand, UNM_sites.SLand, UNM_sites.JSav,...
-    UNM_sites.PPine, UNM_sites.MCon, UNM_sites.PJ, UNM_sites.PJ_girdle, ...
-    UNM_sites.New_GLand };
-sitelist = {UNM_sites.New};
+    UNM_sites.PPine, UNM_sites.MCon };
+sitelist = {UNM_sites.JSav};
 yearlist = 2016;
 
 % True, overwrite files; False; do not overwrite

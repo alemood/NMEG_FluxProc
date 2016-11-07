@@ -64,19 +64,14 @@ dummy = repmat( -9999, size( qc_tbl, 1 ), 1 );
 timestamp = qc_tbl.timestamp; % Will be stripped later
 % Create an ISO standardized timestamp and convert to numeric.
 % Need to use hig precision when writing this to file.
-% 26 Sep 2016 - Updating to comply with new AMP timestamp conventions
 TIMESTAMP_END = str2num( datestr( timestamp, 'YYYYmmDDHHMM' ));
 TIMESTAMP_START = str2num( datestr( timestamp - datenum([0,0,0,0,30,0]),...
-    'YYYYmmDDHHMM' ));
+    'YYYYmmDDHHMM'));
 [ YEAR, ~, ~ ] = datevec( timestamp );
 DTIME = timestamp - datenum( YEAR, 1, 1 ) + 1;
-%amflx_gf = table( timestamp, TIMESTAMP, YEAR, DTIME );
-%amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMMSS', ...
-%    'YYYY', 'DDD.D' };
-amflx_gf = table( timestamp, TIMESTAMP_START, TIMESTAMP_END, YEAR, DTIME );
-amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMM', ...
-    'YYYYMMDDHHMM' , 'YYYY', 'DDD.D' };
-
+amflx_gf = table( timestamp, TIMESTAMP_START, TIMESTAMP_END , YEAR, DTIME );
+amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMM', 'YYYYMMDDHHMM'...
+    'YYYY', 'DDD.D' };
 
 amflx_gaps = amflx_gf;
 
@@ -116,7 +111,7 @@ amflx_gf = add_cols( amflx_gf, pt_tbl.Rg_f, ...
                      { 'SW_IN_F' }, { 'W/m2' }, Rg_flag ); %SW_IN_F
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.sw_incoming, ...
                        { 'SW_IN' }, { 'W/m2' } );
-% Make sure original RNET is nan in these locations also
+% Make sure original NETRAD is nan in these locations also
 qc_tbl.NR_tot( Rg_flag ) = nan;
 
 % Precip
@@ -149,22 +144,21 @@ hold on;
 plot(timestamp, amflx_gaps.LW_IN, '.b');
 title('LW\_IN');
                    
-% Recalculate Rnet
+% Recalculate NETRAD
 if (sitecode==UNM_sites.GLand || sitecode==UNM_sites.SLand) && ...
         qc_tbl.timestamp(end) < datenum(2008, 01, 01, 0, 30, 0)
-    RNET_flag = false( size( amflx_gf, 1 ), 1 );
+    NETRAD_flag = false( size( amflx_gf, 1 ), 1 );
     amflx_gf = add_cols( amflx_gf, qc_tbl.NR_tot, ...
-        { 'NETRAD_F' }, { 'W/m2' }, RNET_flag );
+        { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag );
     amflx_gaps = add_cols( amflx_gaps, qc_tbl.NR_tot, ...
         { 'NETRAD' }, { 'W/m2' } );
     
 else
-    rnet_new = ( amflx_gf.SW_IN_F + amflx_gf.LW_IN_F ) - ...
+    NETRAD_new = ( amflx_gf.SW_IN_F + amflx_gf.LW_IN_F ) - ...
         ( qc_tbl.sw_outgoing + qc_tbl.lw_outgoing );
-    
-    RNET_flag = verify_gapfilling( rnet_new, qc_tbl.NR_tot, 1e-1 );
-    amflx_gf = add_cols( amflx_gf, rnet_new, ...
-        { 'NETRAD_F' }, { 'W/m2' }, RNET_flag ); %RNET_F
+    NETRAD_flag = verify_gapfilling( NETRAD_new, qc_tbl.NR_tot, 1e-1 );
+    amflx_gf = add_cols( amflx_gf, NETRAD_new, ...
+        { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag ); %NETRAD_F
     amflx_gaps = add_cols( amflx_gaps, qc_tbl.NR_tot, ...
         { 'NETRAD' }, { 'W/m2' } );
     
@@ -182,14 +176,18 @@ end
 
 % FIXME - Potentially missing: APAR, PAR_out, PAR_DIFF, Rg_DIFF.
 
+%Add flag for when it could be considered sunny, for teasing out overcast
+%periods.
+PAR_sun = qc_tbl.Par_Avg > 800; %This is an arbitrary threshold
+
 met_nongf = [ qc_tbl.u_star, qc_tbl.wnd_dir_compass, qc_tbl.wnd_spd, ...
-              qc_tbl.atm_press, qc_tbl.Par_Avg, ...%qc_tbl.PAR_out, qc_tbl.NR_tot, qc_tbl.lw_incoming
+              qc_tbl.atm_press, qc_tbl.Par_Avg, PAR_sun,...%qc_tbl.PAR_out, qc_tbl.NR_tot, qc_tbl.lw_incoming
               qc_tbl.sw_outgoing, qc_tbl.lw_outgoing ];
 headers = { 'USTAR', 'WD', 'WS', ...
-            'PA', 'PPFD_IN', ...%'PAR_out', 'RNET_old', 'LW_IN'
+            'PA', 'PPFD_IN', 'SUN_FLAG' ...%'PAR_out', 'NETRAD_old', 'LW_IN'
             'SW_OUT', 'LW_OUT' };
 units = { 'm/s', 'deg', 'm/s', ...
-          'kPa', 'mumol/m2/s', ...% 'mumol/m2/s', 'W/m2', 'W/m2',...
+          'kPa', 'mumol/m2/s','--', ...% 'mumol/m2/s', 'W/m2', 'W/m2',...
           'W/m2', 'W/m2'};
       
 % Make table

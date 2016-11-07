@@ -76,6 +76,7 @@ fnames = fnames( idx );
 idx = find( ( dns >= date_start ) & ( dns <= date_end ) );
 % if looking at TOA5 files, included the latest file dated *before* the
 % start date -- it could contain data from the requested range
+%FIXME - If all data is in one TOA5 file MATLAB does not find a TOA5 file
 if all( dns < date_start ) & strcmpi( type, 'TOA5' )
     idx = numel( dns );
 elseif ( not(strcmp( type, 'TOB1' ))) & ( idx( 1 ) ~= 1 )

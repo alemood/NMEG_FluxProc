@@ -6,9 +6,9 @@ sitelist = {UNM_sites.GLand, UNM_sites.SLand, ...
     UNM_sites.MCon};
 sitelist = { UNM_sites.PJ };%, ...
     %UNM_sites.SLand};
-yearlist = 2007:2015;%2013:2014;% 2009:2013;
-write_qc = true;
-write_rbd = true;
+yearlist = 2015%2007:2015;%2013:2014;% 2009:2013;
+write_qc = false;
+write_rbd = false;
 
 count = 1;
 for i = 1:length(sitelist);

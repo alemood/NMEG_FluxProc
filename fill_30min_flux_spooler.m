@@ -150,6 +150,13 @@ elseif sitecode == 3 % JSav
         output = fill_30min_flux_processor( output, 3, 2013, DOYidx(111.313), DOYidx(111.979));
         output = fill_30min_flux_processor( output, 3, 2013, DOYidx(201.688), DOYidx(205.688));
         output = fill_30min_flux_processor( output, 3, 2013, DOYidx(326.104), DOYidx(329.354));
+    elseif year == 2016
+        output = fill_30min_flux_processor( output, 3, 2016, DOYidx(182.55), DOYidx(189.48));
+        output = fill_30min_flux_processor( output, 3, 2016, DOYidx(189.63), DOYidx(190.84));
+        output = fill_30min_flux_processor( output, 3, 2016, DOYidx(190.96), DOYidx(199.38));
+        output = fill_30min_flux_processor( output, 3, 2016, DOYidx(199.6), DOYidx(204.46));
+        output = fill_30min_flux_processor( output, 3, 2016, DOYidx(204.625), DOYidx(204.67));
+        output = fill_30min_flux_processor( output, 3, 2016, DOYidx(204.77), DOYidx(210.36));
     end
     
 elseif sitecode == 4 % PJ_control

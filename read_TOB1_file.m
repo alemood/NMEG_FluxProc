@@ -67,6 +67,7 @@ data_start = ftell( fid );
 
 % Calculate the number of bytes in a record and set the corresponding matlab
 % precision
+
 for i=1:length( var_names )
     if strcmp( char ( var_types ( i ) ),'ULONG' )
         var_nbytes( i ) = 4;
@@ -87,13 +88,16 @@ end
 var_byte_offset = [0, cumsum( var_nbytes( 2:end ) )];
 
 ds = dataset(  );  %dataset to contain data read from file
+
 for this_var = 1:length( var_names )
+    
     status = fseek( fid, data_start + var_byte_offset( this_var ), 'bof' );
     % don't want to skip an entire record - want to skip from END of this
     % record's this_var to the BEGINNING of the next record's this_var 
     bytes_to_skip = sum( var_nbytes ) - var_nbytes( this_var );
     ds.( var_names{ this_var } ) = ...
         fread( fid, inf, var_matlab_type{ this_var }, bytes_to_skip );
+    
 end
 
 %done reading the input file now

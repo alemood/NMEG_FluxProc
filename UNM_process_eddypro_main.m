@@ -91,13 +91,15 @@ eddypro_exe = fullfile('C:','"Program Files (x86)"',...
     'LI-COR','EddyPro-6.1.0','bin','eddypro_rp');
 eddypro_cmd = [eddypro_exe,' ',eddypro_proj];
 
+
 tic
 fprintf( '---------- processing in EddyPro ----------\n' );
 [ep_status ep_result]=system(eddypro_cmd)    %Run EddyPro. May need to change environment
 toc
 
 %Get list of full_output eddypro files in site dir
-listing= dir(fullfile('C:','Research_Flux_Towers',...
+if ep_status == 0
+listing = dir(fullfile('C:','Research_Flux_Towers',...
     'SiteData',char(sitecode),...
     'eddypro_out','*full_output*'));
 %listing = struct2table(listing);   %Convert listing to table
@@ -106,38 +108,54 @@ fname = listing(f_i).name;
 fname = fullfile(getenv('EPROOT'),fname);
 all_data = eddypro_2_table( fname );
 
-outfolder = fullfile(getenv('FLUXROOT'),'SiteData', char( sitecode ), ...
-			 'ep_data');
-if exist(outfolder) ~= 7
-    disp(['creating ', outfolder]);
-    [result, msg, msgid] = mkdir(outfolder);
-end
-
+%%
 %Save file if something goes wrong
 outfile = fullfile( get_out_directory( sitecode ), ...
                     'ep_data', ...
                     sprintf( '%s_ep_%d.mat', ...
-                             get_site_name( sitecode ), year ) );
+                    get_site_name( sitecode ), year ) );
+                
+if exist(outfile) ~= 2
+    disp(['No ', num2str(year) , ' ep.mat exists for ', ...
+        get_site_name(sitecode) ] );
+    disp(['Creating flux .mat file for ', num2str(year) ]);
+    save( outfile , 'all_data');
+else
+    oldfile =  importdata ( outfile );
+    
+    if  isa(all_data,'dataset')
+        all_data = dataset2table(all_data);
+    end
+    
+    if isa( oldfile, 'dataset')
+        oldfile = dataset2table( oldfile);
+    end
+    %FIXME - Either EP is processing weird or this is reprocessing a cards
+    %as year-to-date time periods. table_append_common_vars may be
+    %innapropriate as it just vertically concatenates new and existing
+    %tables. Table_fill_timestamps would be better but needs to be changed
+    %to make sure tables with values are used instead of NaN.
+    %Table_foldin_data is maybe even better. (merge by datenum
+    %   1.merge by datenum
+    %   2. table_foldin_data
+    
+    newfile = table_foldin_data(oldfile, all_data);
+    all_data = newfile ; %Rename to allow uploaded data in CDP to be loaded as 'all_data'. 
+    %newfile = table_append_common_vars ( oldfile , all_data );
+    save( outfile, 'all_data' );
+end
 
-save( outfile, 'all_data' );
-
-ts_start = min(all_data.timestamp);
-ts_start = datestr(ts_start,'yyyy_mm_dd_HHMM');
+ts_end = max(all_data.timestamp);
+ts_end = datestr(ts_end,'yyyy_mm_dd_HHMM');
 
  [SUCCESS,MESSAGE,MESSAGEID] = movefile(fname,...
       fullfile(getenv('FLUXROOT'),'SiteData',char(sitecode),...
-      'ep_data',['ep_',char(sitecode),'_',ts_start,'.csv']))
+      'ep_data',['ep_',char(sitecode),'_',ts_end,'.csv']))
+else
+    warning('EddyPro ran into issues and could not process')
+end
   
- delete(fullfile(getenv('EPROOT'),['eddypro_',char(sitecode),'*']),fullfile(getenv('EPROOT'),'processing*'));
+ %delete(fullfile(getenv('EPROOT'),['eddypro_',char(sitecode),'*']),fullfile(getenv('EPROOT'),'processing*'));
 
- %Save to .mat file. Not sure if this is necessary right now.
- %Check to see if directory exists
-
-% 
-% outfile = fullfile( get_out_directory( sitecode ), ...
-%                     'ep_data', ...
-%                     sprintf( '%s_ep_%d.mat', ...
-%                              get_site_name( sitecode ), year ) );
-% save( outfile, 'all_data' );
-
+ 
 end

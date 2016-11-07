@@ -1,8 +1,8 @@
-function T = eddypro_2_table( varargin )
-% EDDYPRO_2_TABLE - parse an EddyPro full output CSV file to a matlab table
-% array. 
+function T = csv_2_table( varargin )
+% CSV_2_TABLE - parse an EddyPro CSV file to a matlab table
+% array.  
 %
-% Uses parse_edypro_file_headers to determine variable names, variable units,
+% Uses parse_TOA5_file_headers to determine variable names, variable units,
 % file size, and delimiter.  Adds a 'timestamp' variable of the file's
 % timetamps converted to Matlab serial datenumbers.  Uses clean_up_varnames
 % to convert variable names to legal Matlab variables.
@@ -16,16 +16,16 @@ function T = eddypro_2_table( varargin )
 % SEE ALSO
 %    table, datenum, parse_TOA5_file_headers, clean_up_varnames
 %
-% author: Alex Moody, UNM, April 2016
-% modified from: toa5_2_dataset by Timothy Hilton
+% author: Gregory E. Maurer, UNM, April 2015
+% modified from: toa5_2_table by Gregory Maurer; toa5_2_dataset by Timothy Hilton
 
 if nargin==0
     % no files specified; prompt user to select files
     [ fname, pathname, filterindex ] = uigetfile( ...
-        { '*.*','All files' }, ...
+        { '*.csv','EddyPro files (*.csv)' }, ...
         'select CSV file to open', ...
          fullfile( getenv('FLUXROOT'), 'SiteData' ), ...
-        'MultiSelect', 'on' );
+        'MultiSelect', 'off' );
     fname =  fullfile( pathname, fname );
 else
     fname = varargin{1};
@@ -59,7 +59,8 @@ file_lines = strrep( file_lines, '"', '' );
 date_re = '(\d){1,4}[/-](\d){1,2}[/-](\d){2,4}';
 % match hh:mm or hh:mm:ss, allow one or two digits for all three fields
 time_re = '(\d{1,2}):(\d{1,2})(:(\d{1,2})){0,1}';
-tstamp_re = [ date_re, ',*', time_re ];
+
+tstamp_re = [ date_re, '[\s,]*', time_re ];
 
 % find timestamps
 [ tstamps, data_idx ] = regexp( file_lines, ...
@@ -92,7 +93,7 @@ elseif year_col == 3
     month_col = 1;
     day_col = 2;
 else
-    error( 'invalid_timestamp', 'Error parsing TOA5 timestamp' )
+    error( 'invalid_timestamp', 'Error parsing CSV timestamp' )
 end
 
 dn = datenum( t_num( :, [ year_col, month_col, day_col, 4, 5, 6 ] ) );
@@ -107,9 +108,12 @@ fmt = repmat( sprintf( '%s%%f', delim ), 1, n_numeric_vars );
 full_line = cellfun( @(x) size( x, 1 ), data ) == n_numeric_vars;
 data = [ data{ find( full_line ) } ]';
 
+%FIXME: Seems hardcoded to look for beginning of variables in Eddypro,TOA5,
+%or TOB1 file.
 var_names = clean_up_varnames( var_names( 4:end ) );
 
 T = array2table( data, 'VariableNames', var_names );
 T.Properties.VariableUnits = var_units( 3:end );
 % add timestamp
 T.timestamp = dn;
+
