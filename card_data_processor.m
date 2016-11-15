@@ -307,7 +307,11 @@ methods
                         warning( 'No external data for this site' );
                     end
             end
-            % Put in table array
+            % Put in table array. If table is total precip, process into
+            % 30min intervals.
+            if strcmpi( conf.name,'precip')
+                i_data = total_precip_calculator ( i_data );
+            end                
             table_array{ i } = i_data;
         end
         % Loop through each table in table_array and merge into

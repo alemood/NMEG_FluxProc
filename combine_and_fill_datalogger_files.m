@@ -124,10 +124,21 @@ end
 combined_tbl = table_vertcat_fill_vars( TableArray{ : } );
 
 fprintf( 1, 'filling missing timestamps\n' );
+
+% Most loggers record on 30 min timestamps, but the noah total precip gauge
+% records every 5 mintues.
+if strcmpi( loggerName ,'precip')
+combined_tbl = table_fill_timestamps( combined_tbl, ...
+                              'timestamp', ... 
+                              'delta_t', 1/288 ,... % 1/288 of a day = 5 min
+                              't_min', min( combined_tbl.timestamp ), ...
+                              't_max', max( combined_tbl.timestamp ) );    
+else
 combined_tbl = table_fill_timestamps( combined_tbl, ...
                               'timestamp', ... 
                               't_min', min( combined_tbl.timestamp ), ...
                               't_max', max( combined_tbl.timestamp ) );
+end
 
 % remove duplicated timestamps (e.g., in TX 2010)
 fprintf( 1, 'removing duplicate timestamps\n' );

@@ -310,7 +310,7 @@ save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', 'card_restart_01.mat' ) );
 %     end
 % --------------------------------------------------
 % the data are now copied from the card and backed up.
-%%
+
 % If this is a flux datalogger card process the data
 if strcmp( logger_name, 'flux' )
     % merge the new data into the fluxall file
