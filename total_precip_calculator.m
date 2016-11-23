@@ -5,10 +5,8 @@ function precip_t = total_precip_calculator( t )
 % to B and fills data with NaNs.
 %
 % USAGE
-%    [ tbl_out1, tbl_out2 ] = total_precip_calculator( tbl_in1, tbl_in2, ...
-%                                                      tvar1, tvar2, ...
-%                                                      tol, ...
-%                                                      t_start, t_end )
+%    [ precip_t ] = total_precip_calculator( precip_table_from_NOAHII/CR1000)
+%
 % INPUTS
 %     tbl_in1, tbl_in2: matlab table objects containing data to be merged
 %     tvar1, tvar2: strings containing names of table variables containing
@@ -26,7 +24,7 @@ function precip_t = total_precip_calculator( t )
 
 % Initialize some universal variables
 
- tol = 0.05; % precision of ETI NOAH II in mm to screen out noise in stable conditions
+ tol = 0.254; % precision of ETI NOAH II in mm to screen out noise in stable conditions
   
 % Get precip table
  if exist('t') ~= 1
@@ -117,7 +115,7 @@ function precip_t = total_precip_calculator( t )
 %  precip_t = array2table(precip_t,'VariableNames',var_names);
 %  precip_t.Properties.VariableUnits = var_units;
 
-precip_t= [ts_30min', precip_mm30min'.*corr];
+precip_t= [ts_30min', (precip_mm30min.*corr)'];
 var_names ={'timestamp','total_precip'};
 precip_t = array2table(precip_t,'VariableNames', var_names);
  

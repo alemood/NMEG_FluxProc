@@ -193,6 +193,8 @@ end
 
 % format to match existing FLUX_all_YYYY.xls files
 % for some reason, two time columns
+try
+
 timestamp2 = all_data.timestamp;
 timestamp2 = table( timestamp2) ;
 all_data = [ timestamp2, all_data ];
@@ -214,6 +216,13 @@ writetable( all_data, ...
          'Delimiter','\t');
 disp( 'writing .mat file' );
 save( strrep( outfile, '.mat', '_filled.mat' ), 'all_data' );
+
+catch err
+    % echo the error report
+    fprintf( 'Error transfering compressed raw data to edac\n' );
+    disp( getReport( err ) );
+    fprintf( 'continuing with processing\n' );
+end
 
 %--------------------------------------------------
 
