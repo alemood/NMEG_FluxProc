@@ -9,7 +9,7 @@ args.addRequired( 'sitecode', @(x) ( isintval( x ) | isa( x, 'UNM_sites' ) ) );
 args.addRequired( 'date_start', ...
                @(x) ( all( x >= 2006 ) ) );
 args.addRequired( 'date_end', ...
-               @(x) ( all( x <= this_year ) ) );
+               @(x) ( all( x <= now ) ) );
 args.addOptional('irgacompare', false , @islogical); 
 
 % parse required and optional inputs
@@ -28,6 +28,7 @@ if irgacompare
             char(sitecode));
         return
     end
+    type = 'irga';
     %Get filenames for processed 7200 data. Might be good to start
     %processing 7200 data automatically in EP for New MCon and SLand
     fnames72 = list_files(fullfile('C:','Research_Flux_Towers',...
@@ -73,6 +74,11 @@ if irgacompare
     T75 = table_foldin_data(temp, T75);
     end
     
+    %FIXME The figure maker below will use a table called T, so 7200 and
+    %7500 eddypro output tables should be combined (outerjoin? inner join?)
+    %so that all variables are there. They will be suffixed with _1 or _2
+    %by matlab. 
+    
     %IRGA comparisons are made using EddyPro Outputs, so both tables have
     %the same var names. FIXME - maybe start putting irga2 from eddypro in
     %fluxall.
@@ -80,9 +86,9 @@ if irgacompare
     'un_H', 'H',...
     'un_LE' 'LE',...
     'un_h2o_flux' 'h2o_flux'};
-    T = 
+   % ts_72 = T = 
 else  %Otherwise, just go ahead and compare NMEG vs EP
-    
+    type = 'fluxproc';
     T = parse_fluxall_txt_file(sitecode, year );
     nmeg_var = {'Fc_raw' 'Fc_raw_massman_ourwpl',...
         'SensibleHeat_dry' 'HSdry_massman', ...
@@ -92,37 +98,48 @@ else  %Otherwise, just go ahead and compare NMEG vs EP
         'un_H', 'H',...
         'un_LE' 'LE',...
         'un_h2o_flux' 'h2o_flux'};
+    ts = T.timestamp;
 end
 %Access variable names through any table T
-ts = T1.timestamp;
 
 
-for i=1:length(T1.varname)+4;
+
+for i=1:length(nmeg_var)+4;
     if i <= 8
-        NMEGvar = char(nmeg_var(i)); 
-        EPvar = ep_var((i));
-        varname = char(T2.varname(i));
-        h(i) = plot_compare( T{:,NMEGvar}, T{:,EPvar}, ts, varname, sitecode , year )
+        NMEGvar = nmeg_var(i); % NMEG REFERENCE FOR ACCESSING TABLE
+        EPvar = ep_var((i));   % EP REFERENCE FOR ACCESSING TABLE
+        varname = char(nmeg_var(i));
+        h(i) = ...
+            plot_bivariate_comparison( T{:,NMEGvar}, T{:,EPvar}, ts, type, ...
+            'fig_name', varname, 'sitecode', sitecode );
     elseif i==9 %FCcorrected - FCraw
-        NMEGvar = T{:,T1.varname(2)} - T{:,T1.varname(1)}; 
-        EPvar = T{:,T2.varname(2)} - T{:,T2.varname(1)};
+        NMEGvar = T{:,nmeg_var(2)} - T{:,nmeg_var(1)}; 
+        EPvar = T{:,ep_var(2)} - T{:,ep_var(1)};
         varname = 'FC raw - FC corrected';
-        h(i) = plot_compare( NMEGvar, EPvar, ts, varname,sitecode,year)
+        h(i) = ...
+            plot_bivariate_comparison( NMEGvar, EPvar, ts, type, ...
+            'fig_name', varname, 'sitecode', sitecode );
     elseif i==10 %Hcorrected - Hraw
-        NMEGvar = T{:,T1.varname(4)} - T{:,T1.varname(3)}; 
-        EPvar = T{:,T2.varname(4)} - T{:,T2.varname(3)};
+        NMEGvar = T{:,nmeg_var(4)} - T{:,nmeg_var(3)}; 
+        EPvar = T{:,ep_var(4)} - T{:,ep_var(3)};
         varname = 'H raw - H corrected';
-        h(i) =plot_compare( NMEGvar, EPvar, ts, varname,sitecode,year)
+        h(i) = ...
+            plot_bivariate_comparison( NMEGvar, EPvar, ts, type, ...
+            'fig_name', varname, 'sitecode', sitecode );
     elseif i==11 %LEcorrected - LEraw
-       NMEGvar = T{:,T1.varname(6)} - T{:,T1.varname(5)}; 
-        EPvar = T{:,T2.varname(6)} - T{:,T2.varname(5)};
+        NMEGvar = T{:,nmeg_var(6)} - T{:,nmeg_var(5)}; 
+        EPvar = T{:,ep_var(6)} - T{:,ep_var(5)};
         varname = 'LE raw - LE corrected';
-        h(i) = plot_compare( NMEGvar, EPvar, ts, varname,sitecode,year)
+        h(i) = ...
+            plot_bivariate_comparison( NMEGvar, EPvar, ts, type, ...
+            'fig_name', varname, 'sitecode', sitecode );
     elseif i==12 %h2o_cor - h2o_raw
-        NMEGvar = T{:,T1.varname(8)} - T{:,T1.varname(7)}; 
-        EPvar = T{:,T2.varname(8)} - T{:,T2.varname(7)};
+        NMEGvar = T{:,nmeg_var(8)} - T{:,nmeg_var(7)}; 
+        EPvar = T{:,ep_var(8)} - T{:,ep_var(7)};
         varname = 'h2o raw - h2o cor ';
-        h(i) = plot_compare( NMEGvar, EPvar, ts, varname,sitecode,year)
+        h(i) = ...
+            plot_bivariate_comparison( NMEGvar, EPvar, ts, type, ...
+            'fig_name', varname, 'sitecode', sitecode );
     end
 end
 %    savefig( h , fullfile( getenv('FLUXROOT'),'SiteData', ...

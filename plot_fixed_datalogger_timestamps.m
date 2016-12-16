@@ -41,6 +41,9 @@ year = args.Results.year;
 dataOrig = args.Results.dataOrig;
 dataShifted = args.Results.dataShifted;
 
+% parse YAML config file
+siteconfig  = parse_yaml_config( sitecode , 'SiteVars');
+
 % Days to plot radiation averages for
 radStartDay = 171; % June 20
 radEndDay = 191; % July 10
@@ -77,8 +80,8 @@ solDates = unique( round( allTimestamps )); % Dates in the plotting range
 solDates = solDates( ~isnan( solDates ));
 % [Solar noon, theoretical sunrise, theoretical sunset]
 solCalcs = noaa_solar_calcs( ...
-    UNM_sites_info( sitecode ).latitude, ...
-    UNM_sites_info( sitecode ).longitude, ...
+    siteconfig.latitude, ...
+    siteconfig.longitude, ...
     solDates );
 % Convert from times from day fraction to hours
 solCalcs = solCalcs( :, {'solarNoonLST', 'sunriseTimeLST', 'sunsetTimeLST'} );

@@ -6,6 +6,7 @@
 *.fig
 *.dat
 *.bak
+*.swp
 \#*\#
 scratch.m
 test_batch.m
@@ -73,3 +74,4 @@ scripts/NMEG_EP_compare/make_irga_comparison.m
 scripts/script_make_fluxall.m
 retrieve_card_data/raw_ancillary_2_TOA5.m
 scripts/script_make_qc_gf.m
+profiler_results

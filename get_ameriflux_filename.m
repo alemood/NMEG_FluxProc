@@ -1,4 +1,4 @@
-function fpath = get_ameriflux_filename( sitecode, year, suffix)
+function fpath = get_ameriflux_filename( sitecode, year, suffix , varargin)
 % GET_AMERIFLUX_FILENAME - returns the full path to the Ameriflux file for the
 %   specified site-year.  
 %
@@ -25,18 +25,28 @@ function fpath = get_ameriflux_filename( sitecode, year, suffix)
 % check user arguments
 args = inputParser;
 args.addRequired( 'sitecode', ...
-                  @(x) ( isintval( x ) | isa( x, 'UNM_sites' ) ) );
+    @(x) ( isintval( x ) | isa( x, 'UNM_sites' ) ) );
 args.addRequired( 'year', ...
-                  @(x) ( isintval( x ) & ( x >= 2006 ) & ( x <= this_year ) ) );
+    @(x) ( isintval( x ) & ( x >= 2006 ) & ( x <= this_year ) ) );
 args.addRequired( 'suffix', ...
-                  @(x) any( strcmp( x, { 'with_gaps', 'gapfilled', 'soil' } ) ) ) 
-args.parse( sitecode, year, suffix );
+    @(x) any( strcmp( x, { 'with_gaps', 'gapfilled', 'soil' } ) ) ) ;
+args.addOptional( 'version', ...
+    '', @ischar);
+
+args.parse( sitecode, year, suffix , varargin{ : } );
 
 % build the Ameriflux file name
-sites_info = parse_UNM_site_table();
-aflx_site_name = char( sites_info.Ameriflux( args.Results.sitecode ) );
+%sites_info = parse_UNM_site_table();
+%aflx_site_name = char( sites_info.Ameriflux( args.Results.sitecode ) );
+site_info = parse_yaml_config( sitecode , 'SiteVars');
+aflx_site_name = site_info.ameriflux_name;
 fname = sprintf( '%s_%d_%s.txt', ...
                  aflx_site_name, ...
                  args.Results.year, ...
                  args.Results.suffix );
-fpath = fullfile( getenv( 'FLUXROOT' ), 'Ameriflux_files', fname );
+             
+ if ~isempty(args.Results.version)
+     fpath = fullfile( getenv( 'FLUXROOT' ), 'Ameriflux_files', args.Results.version, fname );
+ else
+     fpath = fullfile( getenv( 'FLUXROOT' ), 'Ameriflux_files',  fname );
+ end

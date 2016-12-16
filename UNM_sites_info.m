@@ -65,7 +65,7 @@ methods
     function obj = UNM_sites_info( this_site )
     % UNM_SITES_INFO - class constructor
     %   
-    
+    warning('FIXME - Trying to deprecate this code (UNM_sites_info.m) \n Replace with parse_yaml_config')
     if isnumeric( this_site )
         this_site = UNM_sites( this_site );
     elseif ischar( this_site )
