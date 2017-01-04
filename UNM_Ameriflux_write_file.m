@@ -84,6 +84,10 @@ fprintf( 1, 'writing %s for %s use...\n', fname, version );
 
 fid = fopen( fname, 'w+' );
 
+if ~strcmpi(pwd,'C:\Code\NMEG_FluxProc')
+    cd('C:\Code\NMEG_FluxProc');
+end
+
 if strcmp(version,'in_house')  
 fprintf( fid, 'Site name: %s\n', aflx_site_name );
 fprintf( fid, 'Email: %s\n', email );

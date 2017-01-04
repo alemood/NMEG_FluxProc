@@ -3,7 +3,7 @@
 
 sitelist = {UNM_sites.GLand, UNM_sites.SLand, UNM_sites.JSav,...
     UNM_sites.PPine, UNM_sites.MCon };
-sitelist = {UNM_sites.JSav};
+sitelist = {UNM_sites.MCon};
 yearlist = 2016;
 
 % True, overwrite files; False; do not overwrite

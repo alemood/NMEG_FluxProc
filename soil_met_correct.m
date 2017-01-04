@@ -69,7 +69,8 @@ end
 switch sitecode
     % sites with cs616s
     case { UNM_sites.GLand, UNM_sites.SLand, UNM_sites.JSav, ...
-            UNM_sites.New_GLand, UNM_sites.MCon, UNM_sites.PPine }
+            UNM_sites.New_GLand, UNM_sites.MCon, UNM_sites.MCon_SS,...
+            UNM_sites.PPine }
         
         % If CS616s are present we need to convert period to VWC and 
         % temperature correct them. Make arrays of matched SoilT and SWC 

@@ -204,7 +204,7 @@ keenan = false;
 
 % create the variables to be written to the output files
 [ amflux_gaps, amflux_gf ] = ...
-    prepare_AF_output_data( sitecode, qc_tbl, pt_tbl, soil_tbl, keenan );
+    prepare_AF_output_data( sitecode, qc_tbl, pt_tbl, soil_tbl, keenan, version );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % make a diagnostic plot of partitioning outputs.
@@ -241,16 +241,30 @@ end
 % Note that sometimes we don't want to export all the GPP/RECO columns
 % Select what we want and remove the ones we don't want...
 if sitecode==UNM_sites.MCon || sitecode==UNM_sites.PPine
+    if strcmpi(version , 'in_house')
+    amflux_gf.GPP = amflux_gf.GPP_MR2005_ecb;
+    amflux_gf.RECO = amflux_gf.RECO_MR2005_ecb;
+    amflux_gaps.GPP = amflux_gaps.GPP_MR2005_ecb;
+    amflux_gaps.RECO = amflux_gaps.RECO_MR2005_ecb;   
+    else 
     amflux_gf.GPP_PI = amflux_gf.GPP_MR2005_ecb;
     amflux_gf.RECO_PI = amflux_gf.RECO_MR2005_ecb;
     amflux_gaps.GPP_PI = amflux_gaps.GPP_MR2005_ecb;
     amflux_gaps.RECO_PI = amflux_gaps.RECO_MR2005_ecb;
+    end
     
 else
+    if strcmpi(version, 'in_house')
+    amflux_gf.GPP = amflux_gf.GPP_GL2010_amended_ecb;
+    amflux_gf.RECO = amflux_gf.RECO_GL2010_amended_ecb;
+    amflux_gaps.GPP = amflux_gaps.GPP_GL2010_amended_ecb;
+    amflux_gaps.RECO = amflux_gaps.RECO_GL2010_amended_ecb;
+    else
     amflux_gf.GPP_PI = amflux_gf.GPP_GL2010_amended_ecb;
     amflux_gf.RECO_PI = amflux_gf.RECO_GL2010_amended_ecb;
     amflux_gaps.GPP_PI = amflux_gaps.GPP_GL2010_amended_ecb;
     amflux_gaps.RECO_PI = amflux_gaps.RECO_GL2010_amended_ecb;
+    end
     
 end
 

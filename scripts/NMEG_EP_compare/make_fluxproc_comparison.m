@@ -102,6 +102,11 @@ else  %Otherwise, just go ahead and compare NMEG vs EP
 end
 %Access variable names through any table T
 
+% Discard data outside of requested time period
+discard_idx = ( ( T.timestamp < date_start ) | ...
+                ( T.timestamp > date_end ) ); 
+T( discard_idx, : ) = [];
+
 
 
 for i=1:length(nmeg_var)+4;

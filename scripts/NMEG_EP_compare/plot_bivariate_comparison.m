@@ -32,7 +32,7 @@ switch type
       var1name = 'Open Path';
       var2name = 'Closed Path';
   case 'general'
-      if exist(varnames
+      if exist(varnames)
           var1name = char(varnames{1});
           var2name = char(varnames{2});
       else

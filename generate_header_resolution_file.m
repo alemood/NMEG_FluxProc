@@ -107,7 +107,7 @@ for i = 1:nFiles
     % Verify that the files are for the requested site
     tokens = regexp( fileNames{ i }, '_', 'split' );
     % deal with the two sites that have an '_' in the sitename
-    if any( strcmp( tokens{ 3 }, { 'girdle', 'GLand' }  ) )
+    if any( strcmp( tokens{ 3 }, { 'girdle', 'GLand', 'SS' }  ) )
         sitecodeFromFile = UNM_sites.( [ tokens{ 2 }, '_', tokens{ 3 } ] );
     else
         sitecodeFromFile = UNM_sites.( tokens{ 2 } );

@@ -8,19 +8,20 @@
 % Years to create files for
 %yearlist = 2008:2014;
 % Partitioned data source
-partmethod = 'eddyproc'; %'reddyproc'
+partmethod = 'Reddyproc'; %'eddyproc'
 % Make daily files? All AF files should be in $FLUXROOT$/Ameriflux_files
 make_daily = false;
-write_files = false;
+write_files = true;
 process_soil = false;
 version = 'in_house' %'fluxnet'
-showfig = false;
+showfig = true;
 
 if ~showfig
     set(0,'DefaultFigureVisible','off');
 end
 
-for k = 5:5
+%for k = 5:5
+ for k = 6:6;
     switch k
         case 1
             sitelist = {UNM_sites.JSav, ...
@@ -37,6 +38,9 @@ for k = 5:5
             yearlist = 2010:2015;
         case 5
             sitelist = {UNM_sites.PJ};
+            yearlist = 2016;
+        case 6
+            sitelist = {UNM_sites.MCon_SS};
             yearlist = 2016;
     end            
 

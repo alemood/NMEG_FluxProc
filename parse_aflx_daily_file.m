@@ -33,7 +33,7 @@ var_names = regexp( var_names, delim, 'split' );
 var_names = cellfun( @char, var_names, 'UniformOutput',  false );
 var_names = cellfun( @genvarname, var_names, 'UniformOutput',  false );
 var_names{1} = 'TIMESTAMP';
-warning('Parse_aflx_daily_file is NOT deprecated...apparently');
+%warning('Parse_aflx_daily_file is NOT deprecated...apparently');
 %var_units = fgetl( fid );
 %var_units = regexp( var_units, delim, 'split' );
 %var_units = cellfun( @char, var_units, 'UniformOutput',  false );

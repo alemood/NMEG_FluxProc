@@ -202,12 +202,16 @@ fid = fopen( R_code_file, 'w' );
 gf_data_dir = preformat_win_path( gf_data_dir );
 gf_data_infile = preformat_win_path( gf_data_infile );
 plot_outpath = preformat_win_path( plot_outpath );
+%library_path = preformat_win_path('C:\Code\R\win-library\3.3');
 % ------------------------------------------------------------
 % write R code to run the gapfiller to R_code_file
 
 fprintf( fid, '##generated automatically %s\n\n', datestr( now() ) );
 
+%fprintf( fid, 'Sys.setenv(HOME = "C:\\Code\\R")\n' );
+%fprintf( fid, ['setwd(path.expand("~\\win-library\\3.3")\n'] );
 fprintf( fid, 'library( "REddyProc" )\n\n' );
+
 
 fprintf( fid, '##+++ write warning messages as they occur\n' );
 fprintf( fid, 'options( warn=1 )\n\n' );
@@ -228,7 +232,7 @@ fprintf( fid, '##+++ Initalize R5 reference class sEddyProc for processing of ed
 fprintf( fid, '##+++ with all variables needed for processing later\n' );
 fprintf( fid, ['EddyProc.C <- sEddyProc$new("%s", EddyDataWithPosix.F, ' ...
                'c("NEE","Rg", "Tair", "VPD", "LE", "H" ))\n\n'], ...
-         UNM_sites_info( sitecode ).ameriflux );
+         SiteConf.ameriflux_name );
 
 fprintf( fid, '##+++ Generate plots of all data in directory plots (of current R working dir)\n' );
 fprintf( fid, 'EddyProc.C$sPlotHHFluxes("NEE", Dir.s="%s")\n', plot_outpath);

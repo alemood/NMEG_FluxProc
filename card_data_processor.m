@@ -723,7 +723,9 @@ methods
     % --------------------------------------------------
 
     function compare_fluxproc( obj )
-        
+        % Use plot_bivariate_comparison to make 5-panel figures of EddyPro
+        % and NMEG processing results at fluxall level
+        warning( 'This method not yet implemented\n' );
     end   % compare_fluxproc
     
     % --------------------------------------------------

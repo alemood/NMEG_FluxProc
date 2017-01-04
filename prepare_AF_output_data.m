@@ -2,7 +2,8 @@ function [ amflx_gaps, amflx_gf ] = prepare_AF_output_data( sitecode, ...
                                                             qc_tbl, ...
                                                             pt_tbl, ...
                                                             soil_tbl, ...
-                                                            keenan )
+                                                            keenan,...
+                                                            varargin)
 % PREPARE_AF_OUTPUT_DATA - prepare observed fluxes for writing to
 %   Ameriflux files.  Mostly creates QC flags and gives various 
 %   observations the names they should have for Ameriflux.
@@ -41,15 +42,17 @@ args.addRequired( 'sitecode', @(x) ( isintval(x) | isa( x, 'UNM_sites' )));
 args.addRequired( 'qc_tbl', @(x) ( isa( x, 'table' )));
 args.addRequired( 'pt_tbl', @(x) ( isa( x, 'table' )));
 args.addRequired( 'soil_tbl', @(x) ( isa( x, 'table' )));
+args.addOptional( 'version', 'in_house', @ischar);
 
 % parse optional inputs
-args.parse( sitecode, qc_tbl, pt_tbl, soil_tbl );
+args.parse( sitecode, qc_tbl, pt_tbl, soil_tbl, varargin{:} );
 
 % place user arguments into variables
 sitecode = args.Results.sitecode;
 qc_tbl = args.Results.qc_tbl;
 pt_tbl = args.Results.pt_tbl;
 soil_tbl = args.Results.soil_tbl;
+vers = args.Results.version;
 
 soil_moisture = false; % turn off soil moisture processing for now
 
@@ -64,6 +67,14 @@ dummy = repmat( -9999, size( qc_tbl, 1 ), 1 );
 timestamp = qc_tbl.timestamp; % Will be stripped later
 % Create an ISO standardized timestamp and convert to numeric.
 % Need to use hig precision when writing this to file.
+if strcmpi(vers,'in_house')
+TIMESTAMP = str2num( datestr( timestamp, 'YYYYmmDDHHMMSS' ));
+[ YEAR, ~, ~ ] = datevec( timestamp );
+DTIME = timestamp - datenum( YEAR, 1, 1 ) + 1;
+amflx_gf = table( timestamp, TIMESTAMP , YEAR, DTIME );
+amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMMSS'...
+    'YYYY', 'DDD.D' };    
+else
 TIMESTAMP_END = str2num( datestr( timestamp, 'YYYYmmDDHHMM' ));
 TIMESTAMP_START = str2num( datestr( timestamp - datenum([0,0,0,0,30,0]),...
     'YYYYmmDDHHMM'));
@@ -72,6 +83,7 @@ DTIME = timestamp - datenum( YEAR, 1, 1 ) + 1;
 amflx_gf = table( timestamp, TIMESTAMP_START, TIMESTAMP_END , YEAR, DTIME );
 amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMM', 'YYYYMMDDHHMM'...
     'YYYY', 'DDD.D' };
+end
 
 amflx_gaps = amflx_gf;
 
@@ -212,8 +224,13 @@ clear headers units;
 FC_flag = pt_tbl.NEE_fqc > 0;
 amflx_gf = add_cols( amflx_gf, pt_tbl.NEE_f, ...
     { 'FC_F' }, { 'mumol/m2/s' }, FC_flag );
+try %FIXME - hacky way to allow for Reddyproc NEE_orig column 
 amflx_gaps = add_cols( amflx_gaps, pt_tbl.NEEorig, ...
     { 'FC' }, { 'mumol/m2/s' } );
+catch
+    amflx_gaps = add_cols( amflx_gaps, pt_tbl.NEE_orig, ...
+    { 'FC' }, { 'mumol/m2/s' } );
+end
 
 %LE_flag = verify_gapfilling( pt_tbl.LE_f, qc_tbl.HL_wpl_massman, 1e-2 );
 LE_flag = pt_tbl.LE_fqc > 0;
