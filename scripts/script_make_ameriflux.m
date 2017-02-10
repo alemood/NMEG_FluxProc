@@ -8,40 +8,43 @@
 % Years to create files for
 %yearlist = 2008:2014;
 % Partitioned data source
-partmethod = 'Reddyproc'; %'eddyproc'
+partmethod = 'eddyproc' ;%; %'eddyproc'
 % Make daily files? All AF files should be in $FLUXROOT$/Ameriflux_files
 make_daily = false;
 write_files = true;
 process_soil = false;
-version = 'in_house' %'fluxnet'
-showfig = true;
+version ='in_house';  %'fluxnet'; %
+showfig = false;
 
 if ~showfig
     set(0,'DefaultFigureVisible','off');
 end
 
 %for k = 5:5
- for k = 6:6;
+ for k = 2:4;
     switch k
         case 1
-            sitelist = {UNM_sites.JSav, ...
-                UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine, UNM_sites.MCon};
+            sitelist = { UNM_sites.JSav, ...
+                UNM_sites.SLand, UNM_sites.GLand, ...
+                UNM_sites.PPine, UNM_sites.MCon};
             yearlist = 2007:2015;
         case 2
-              sitelist = {UNM_sites.PJ};
+             sitelist = { UNM_sites.PJ }
             yearlist = 2008:2015;
         case 3
-              sitelist = {UNM_sites.PJ_girdle};
-              yearlist = 2009:2015;
-        case 4 
-            sitelist = {UNM_sites.New_GLand};
+              sitelist = {  UNM_sites.PJ_girdle...
+                UNM_sites.New_GLand }
             yearlist = 2010:2015;
+        case 4
+            sitelist =  {UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle,...
+                UNM_sites.SLand, UNM_sites.GLand, UNM_sites.New_GLand, ...
+                UNM_sites.PPine, UNM_sites.MCon, UNM_sites.MCon_SS};
+            yearlist = 2016;
+            partmethod = 'Reddyproc'
         case 5
-            sitelist = {UNM_sites.PJ};
-            yearlist = 2016;
-        case 6
-            sitelist = {UNM_sites.MCon_SS};
-            yearlist = 2016;
+            sitelist = {UNM_sites.PJ}
+            yearlist = 2014;
+             partmethod = 'eddyproc'
     end            
 
 for i = 1:length(sitelist);
@@ -63,6 +66,7 @@ for i = 1:length(sitelist);
             %error( ' not implemented yet ' );
             UNM_Ameriflux_File_Maker(sitecode, year,...
                 'write_daily_file', make_daily, ...
+                'write_files', write_files, ...
                 'process_soil_data', process_soil, ...
                 'gf_part_source', 'Reddyproc');
             
@@ -73,7 +77,7 @@ for i = 1:length(sitelist);
         %    fullfile(getenv('FLUXROOT'), 'FluxOut' ));
         %clear year;
     end
-    
+   
     close all;
     clear sitecode;
 end

@@ -240,7 +240,9 @@ end
 
 % Note that sometimes we don't want to export all the GPP/RECO columns
 % Select what we want and remove the ones we don't want...
-if sitecode==UNM_sites.MCon || sitecode==UNM_sites.PPine
+if sitecode==UNM_sites.MCon || ...
+        sitecode==UNM_sites.PPine || ...
+        sitecode==UNM_sites.MCon_SS
     if strcmpi(version , 'in_house')
     amflux_gf.GPP = amflux_gf.GPP_MR2005_ecb;
     amflux_gf.RECO = amflux_gf.RECO_MR2005_ecb;
@@ -252,7 +254,30 @@ if sitecode==UNM_sites.MCon || sitecode==UNM_sites.PPine
     amflux_gaps.GPP_PI = amflux_gaps.GPP_MR2005_ecb;
     amflux_gaps.RECO_PI = amflux_gaps.RECO_MR2005_ecb;
     end
-    
+elseif (sitecode==UNM_sites.GLand ||...
+    sitecode==UNM_sites.SLand ||...
+    sitecode==UNM_sites.New_GLand ||...
+    sitecode==UNM_sites.PJ ||...
+    sitecode==UNM_sites.PJ_girdle ||...
+    sitecode==UNM_sites.JSav) & year == 2016
+
+   % The lasslop partioner has been down since 31 Aug 2016. To fill in the
+   % gaps, let's just use Reichstein partioning from Reddyproc :(
+   % We can delete this whole elseif statement when this is resolved.
+    warning('While the Lasslop partioner is down @ end of 2016, use Reichstein for low elevation sites')
+    glidx_start = 1;
+    glidx_end = DOYidx(244);
+    mridx_start = DOYidx(244.0208);
+    % FILL WITH LASSLOP PARTITION TABLES
+    amflux_gf.GPP = amflux_gf.GPP_GL2010_amended_ecb;
+    amflux_gf.RECO = amflux_gf.RECO_GL2010_amended_ecb;
+    amflux_gaps.GPP = amflux_gaps.GPP_GL2010_amended_ecb;
+    amflux_gaps.RECO = amflux_gaps.RECO_GL2010_amended_ecb;
+    % FILL WITH REICHSTEIN PARTITION TABLES
+    amflux_gf.GPP(mridx_start:end,:) = amflux_gf.GPP_MR2005_ecb(mridx_start:end,:);
+    amflux_gf.RECO(mridx_start:end,:) = amflux_gf.RECO_MR2005_ecb(mridx_start:end,:);
+    amflux_gaps.GPP(mridx_start:end,:) = amflux_gaps.GPP_MR2005_ecb(mridx_start:end,:);
+    amflux_gaps.RECO(mridx_start:end,:) = amflux_gaps.RECO_MR2005_ecb(mridx_start:end,:);      
 else
     if strcmpi(version, 'in_house')
     amflux_gf.GPP = amflux_gf.GPP_GL2010_amended_ecb;
@@ -286,8 +311,9 @@ amflux_gaps( :, {'GPP_F_MR2005','RECO_MR2005','GPP_GL2010','RECO_GL2010', ...
     'NEE_GL2010_amended_ecb'}) = [];
 
 if strcmp( version , 'fluxnet' )
-    amflux_gf ( : , {'GPP' , 'RECO' }) = [];
-    amflux_gaps ( : , {'GPP' , 'RECO' }) = [];
+    amflux_gf ( : , {'GPP_PI' , 'RECO_PI' }) = [];
+    amflux_gaps ( : , {'GPP_PI' , 'RECO_PI' }) = [];
+    amflux_gaps ( : , {'SUN_FLAG'} ) =  [] ;
 end    
 
 if args.Results.write_files

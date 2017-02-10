@@ -11,7 +11,7 @@ p.addRequired( 'type', @(x)  strcmpi( x, 'fluxproc' ) | ...
                              strcmpi( x, 'general') );
 p.addParameter( 'fig_name', [], @(x) ischar(x) || isempty(x) );
 p.addParameter( 'sitecode',  @( x ) ( isnumeric( x ) | isa( x, 'UNM_sites' ) ) ); 
-p.addParameter( 'varnames', @iscell); 
+p.addOptional( 'varnames',[], @iscell); 
 
 p.parse( var1, var2, ts, type, varargin{ : } );
 var1 = p.Results.var1;
@@ -32,7 +32,7 @@ switch type
       var1name = 'Open Path';
       var2name = 'Closed Path';
   case 'general'
-      if exist(varnames)
+      if exist('varnames')
           var1name = char(varnames{1});
           var2name = char(varnames{2});
       else

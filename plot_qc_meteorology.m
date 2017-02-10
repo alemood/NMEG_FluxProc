@@ -98,6 +98,9 @@ datetick('x','mmm dd', 'keepticks');
 ylabel( 'Tair ( degrees C )' );
 ylim( [-30, 40] );
 xlim([ min( timestamp ) max( timestamp ) ]);
+Tdiff = (Tair_sonic - 273.15) - Tair_hmp ;
+title(['Mean difference = ', num2str( nanmean( Tdiff ) ),...
+    ' Mode = ', num2str( mode( Tdiff ) )]  );
 
 h_ax( 2 ) = subplot( 6, 1, 3:4 );
 [yy_ax, h_line1, h_line2 ] = plotyy( timestamp, RH_hmp, timestamp, VPD );

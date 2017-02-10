@@ -36,7 +36,7 @@ function [sw_incoming, sw_outgoing, lw_incoming, lw_outgoing, Par_Avg ] = ...
 %%%%%%%%%%%%%%%%% grassland
 switch sitecode
     case UNM_sites.GLand
-        % Current multiplier for CNR1
+        % Current multiplier for CNR1 (checked 2/6/2017
         cnr1_sensitivity = 8.49; % from current program
         cnr1_mult = 1000 / cnr1_sensitivity;
         % Pre-2014 multipliers to be corrected
@@ -132,12 +132,15 @@ switch sitecode
             % FIXME - drop and use CG3CO vars?
             [lw_incoming, lw_outgoing] = ...
                 lw_correct( lw_incoming, lw_outgoing );
+        elseif year_arg == 2016
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end
         
         %%%%%%%%%%%%%%%%% shrubland
     case UNM_sites.SLand
          % Current multiplier for CNR1
-        cnr1_sensitivity = 12.34; % from current program
+        cnr1_sensitivity = 5.09;  % from current program (2/6/2017)
+        % cnr1_sensitivity = 12.34; % from current program
         cnr1_mult = 1000 / cnr1_sensitivity;
         % Pre-2014 multipliers to be corrected
         cnr1_mult_old1 = 163.666;
@@ -249,12 +252,16 @@ switch sitecode
             % Fix one miswired period
             idx1 = decimal_day > 310.58;
             Par_Avg(idx1) = -Par_Avg(idx1) - 60;
+        elseif year_arg == 2016
+            % FIXME - drop and use CG3CO vars?
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end
         
         %%%%%%%%%%%%%%%%% juniper savanna
     case UNM_sites.JSav
         % Current multiplier for CNR1
-        cnr1_sensitivity = 6.9; % from instrument master list - changes in 2014
+        cnr1_sensitivity = 10.55; % changed 4/7/2015
+        %cnr1_sensitivity = 6.9; % from instrument master list - changes in 2014
         cnr1_mult = 1000 / cnr1_sensitivity;
         % Pre-2014 multiplier to be corrected
         cnr1_mult_old = 163.666;
@@ -359,12 +366,16 @@ switch sitecode
             % Temperature correction for long-wave
             % FIXME - start using CG3CO variables?
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing );
+        elseif year_arg == 2016;
+            % FIXME - drop and use CG3CO vars?
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end
         
         %%%%%%%%%%%%%%%%% pinon juniper
     case { UNM_sites.PJ , UNM_sites.TestSite }
         % Current multiplier for CNR1
-        cnr1_sensitivity = 9.69; % from current datalogger program
+        cnr1_sensitivity = 11.43;% 4/22/2016
+        %cnr1_sensitivity = 9.69; % from current datalogger program
         cnr1_mult = 1000 / cnr1_sensitivity;
         % This multiplier (103.199) appears correct in datalogger program
         
@@ -443,12 +454,17 @@ switch sitecode
         elseif year_arg == 2015
             % FIXME - start using CG3CO vars?
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2016;
+            % FIXME - drop and use CG3CO vars?
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );    
+          
         end
         
         %%%%%%%%%%%%%%%%% pj girdle
     case UNM_sites.PJ_girdle
         % Current multiplier for CNR1
-        cnr1_sensitivity = 10.25; % from current datalogger program
+        cnr1_sensitivity = 10.72  % swapped in 2/1/16
+        %cnr1_sensitivity = 10.25; % from current datalogger program
         cnr1_mult = 1000 / cnr1_sensitivity;
         % This multiplier (97.561) was pretty close, but not exactly
         % correct in old datalogger program (was about 100)
@@ -614,6 +630,8 @@ switch sitecode
             % Temp-correct longwave
             % FIXME - should we just use CG3co values?
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2016
+             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
         end
         
         %%%%%%%%%%%%%%%%% mixed conifer
@@ -693,6 +711,26 @@ switch sitecode
             % Temp-correct longwave
             % FIXME - should we just use CG3co values?
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2016
+            %There were two times over the year where the CNR4 was
+            %incorrectly wired.
+            lw_in_temp = lw_incoming;
+            sw_out_temp = sw_outgoing; 
+            sw_in_temp = sw_incoming;
+            
+            idx = decimal_day >= 1 & decimal_day <= 28.4583; 
+            lw_incoming( idx ) = sw_out_temp( idx );
+            sw_outgoing( idx ) = lw_in_temp( idx );
+                     
+            idx = decimal_day > 28.44 & decimal_day <= 64.4583;    
+            sw_incoming( idx ) = sw_out_temp( idx );
+            lw_incoming( idx ) = sw_in_temp( idx );
+            sw_outgoing( idx ) = lw_in_temp( idx );   
+           
+           
+            
+            % Temp-correct longwave
+             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
         end
         
         %%%%%%%%%%%%%%%%% texas
@@ -797,6 +835,30 @@ switch sitecode
             % Temperature correction just for long-wave
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
         elseif year_arg == 2015
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2016
+            cnr1_mult_old = 1000/5.09; %Prior to 22 June 2016
+            cnr1_mult = 1000/9.92; %As of 22 June 2016         
+            % Calibration factor was off 22 June 1100 to 29 Jun. 1530.
+            % CNR1 swapped out and new program was not uploaded immediately.
+            idx = decimal_day > 174.458 & decimal_day <= 181.646;
+            sw_incoming( idx ) = ...
+                sw_incoming( idx ) / cnr1_mult_old * cnr1_mult;
+            lw_incoming( idx ) = ...
+                lw_incoming( idx ) / cnr1_mult_old * cnr1_mult;
+            sw_outgoing( idx ) = ...
+                sw_outgoing( idx ) / cnr1_mult_old * cnr1_mult;
+            lw_outgoing( idx ) = ...
+                lw_outgoing( idx ) / cnr1_mult_old * cnr1_mult;
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing); 
+        end
+    case UNM_sites.MCon_SS
+        if year_arg == 2015 
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2016
             % Temperature correction just for long-wave
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
         end

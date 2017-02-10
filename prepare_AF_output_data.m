@@ -97,7 +97,7 @@ amflx_gaps = amflx_gf;
 
 % Tair
 % FIXME - this is sonic temperature (Tdry - 273.15), not hmp
-% temperature. See issue 12
+% temperature. See issue 12. Line below comments is an attempt to fix. 
 TA_flag = verify_gapfilling( pt_tbl.Tair_f, qc_tbl.Tdry - 273.15, 1e-3 );
 amflx_gf = add_cols( amflx_gf, pt_tbl.Tair_f, ...
                      { 'TA_F' }, { 'deg C' }, TA_flag );
@@ -151,10 +151,12 @@ amflx_gaps = add_cols( amflx_gaps, qc_tbl.lw_incoming, ...
                        { 'LW_IN' }, { 'W/m2' } );
                    
 figure();
-plot(timestamp, amflx_gf.LW_IN_F, '.r');
-hold on;
-plot(timestamp, amflx_gaps.LW_IN, '.b');
+plot(timestamp, [ amflx_gf.LW_IN_F, amflx_gaps.LW_IN ] ,'.');
+datetick;dynamicDateTicks
 title('LW\_IN');
+
+% Net radiation threshold for photosynthetic goings-ons [W m-2]
+PAR_thresh = 20;
                    
 % Recalculate NETRAD
 if (sitecode==UNM_sites.GLand || sitecode==UNM_sites.SLand) && ...
@@ -164,6 +166,15 @@ if (sitecode==UNM_sites.GLand || sitecode==UNM_sites.SLand) && ...
         { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag );
     amflx_gaps = add_cols( amflx_gaps, qc_tbl.NR_tot, ...
         { 'NETRAD' }, { 'W/m2' } );
+ % Add a flag for daytime, PAR > 20 
+    day_f = zeros( height( amflx_gf ) , 1 );
+    day_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+    day_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.NR_tot > PAR_thresh ) ) = 1;
+      
+    amflx_gf = add_cols( amflx_gf, day_f, ...
+        { 'DAYTIME_F' }, { '--' } ); %NETRAD_F
+    amflx_gaps = add_cols( amflx_gaps, day_f, ...
+        { 'DAYTIME' }, { '--' } );
     
 else
     NETRAD_new = ( amflx_gf.SW_IN_F + amflx_gf.LW_IN_F ) - ...
@@ -175,11 +186,27 @@ else
         { 'NETRAD' }, { 'W/m2' } );
     
     figure();
-    plot(timestamp, amflx_gf.NETRAD_F, '.r');
-    hold on;
-    plot(timestamp, amflx_gaps.NETRAD, '.b');
+    plot(timestamp,...
+        [amflx_gf.NETRAD_F,amflx_gaps.NETRAD], '.');
+    datetick;dynamicDateTicks   
     title('NETRAD');
+    
+  %Add a flag for daytime, NETRAD > 0 
+    day_gf_f =  zeros( height( amflx_gf ) , 1 );
+    day_gf_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+    day_gf_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.Par_Avg > PAR_thresh ) ) = 1;
+       
+    day_gaps_f =  zeros( height( amflx_gaps ) , 1 );
+    day_gaps_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+    day_gaps_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.NR_tot > PAR_thresh ) ) = 1;
+             
+    amflx_gf = add_cols( amflx_gf, day_gf_f, ...
+        { 'DAYTIME_F' }, { '--' } ); %NETRAD_F
+    amflx_gaps = add_cols( amflx_gaps, day_gaps_f, ...
+        { 'DAYTIME' }, { '--' } );
 end
+
+
 %%%% % % % % % % % %
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

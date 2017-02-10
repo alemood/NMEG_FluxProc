@@ -153,7 +153,7 @@ ts_end = datestr(ts_end,'yyyy_mm_dd_HHMM');
 
  [SUCCESS,MESSAGE,MESSAGEID] = movefile(fname,...
       fullfile(getenv('FLUXROOT'),'SiteData',char(sitecode),...
-      'ep_data',['ep_',char(sitecode),'_',ts_end,'.csv']))
+      'ep_data',['ep_',char(sitecode),'_',ts_end,'.csv']));
 else
     warning('EddyPro ran into issues and could not process')
 end

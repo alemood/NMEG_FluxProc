@@ -103,7 +103,7 @@ ylabel( 'Radiation' );
 ylim( [-100, 1500] );
 xlim([ min( timestamp ), max( timestamp ) ]);
 datetick( 'x', 'mmm dd', 'keepticks', 'keeplimits' );
-
+dynamicDateTicks
 
 % ============================ FIGURE 2 =================================
 % SWin vs PAR in each month of year
