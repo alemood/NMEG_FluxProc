@@ -471,6 +471,8 @@ elseif sitecode == 10 % PJ_girdle
         output = fill_30min_flux_processor( output, 10,2013,10829,10841);
     elseif year == 2015
         output = fill_30min_flux_processor( output, 10,2015,16739,17202);
+    elseif year == 2016
+        output = fill_30min_flux_processor( output, 10,2016,DOYidx(326),DOYidx(347));
     end   
     
 elseif sitecode == 11 % New GLand

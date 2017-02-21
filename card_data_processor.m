@@ -362,6 +362,9 @@ methods
                 char( obj.sitecode ), ...
                 this_year ) );
             load( fname );
+            if isempty(all_data.date)
+                all_data.date = datestr(all_data.timestamp,'mmddyy');
+            end
             all_data.date = str2num( all_data.date );
             % This data is always missing the last 30 minute period in the
             % year (only goes to Dec 31, 23:30)
@@ -424,7 +427,7 @@ methods
             
 %             obj.data_eddypro = all_data(:,[8,11,14,17,36,37,38,...
 %                 41,42,43,98,100,102,104,176]);
-            obj.data_eddypro = all_data( : , myvars )
+            obj.data_eddypro = all_data( : , myvars );
     end
     
     % --------------------------------------------------
@@ -535,6 +538,9 @@ methods
             
             obj = process_10hz_data( obj );
         end
+        
+        save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', ...\
+            'CDP_test_restart.mat' ));
         
         if parse_eddypro
             fprintf( '--------- processing eddypro data ---------\n')

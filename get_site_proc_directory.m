@@ -1,4 +1,4 @@
-function [ sitefolder, result ] = get_site_directory( sitecode )
+function [ sitefolder, result ] = get_site_proc_directory( sitecode )
 % get_site_directory(sitecode) -- return full path to a site's data
 % directory.
 %
@@ -27,7 +27,7 @@ fluxrc = UNM_flux_process_config();
 
 % determine site folder
 if any(strcmp('sitefolder', fields(fluxrc)))
-    sitefolder = fullfile(fluxrc.sitefolder, get_site_name(sitecode));
+    sitefolder = fullfile(fluxrc.tob1folder, get_site_name(sitecode));
     result = 1;
 else
     % if user did not specify output folder in config, use a default value 
@@ -39,4 +39,3 @@ if exist(sitefolder) ~= 7
     % disp(['creating ', sitefolder]);
     % [result, msg, msgid] = mkdir(sitefolder);
 end
-

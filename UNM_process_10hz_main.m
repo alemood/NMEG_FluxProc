@@ -111,7 +111,7 @@ for i = 1 : n_pds
     this_t_end = process_periods( i + 1 );
 
     if( isempty( ts_data_dir ) )
-        ts_data_dir = fullfile( get_site_directory( sitecode ), 'ts_data' );
+        ts_data_dir = fullfile( get_site_proc_directory( sitecode ), 'ts_data' );
     end
     
     % process 30-minute averages

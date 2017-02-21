@@ -300,7 +300,7 @@ end
 
 % This saves the MATLAB environment so that it can be restarted in case
 % something bad happens
-save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', 'card_restart_01.mat' ) );
+save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', ['card_restart_',char(UNM_sites(this_site)),'01.mat'] ) );
 
 % FIXME - Remove the original folder?
 %     if (result == 0)  %indicates compression successful

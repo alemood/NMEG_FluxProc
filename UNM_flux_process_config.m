@@ -60,6 +60,8 @@ aflx_names = {'US_Seg', ...         % 1
               'US_Test'};           % 14
 
 FLUXROOT = getenv('FLUXROOT');
+PROCROOT = getenv('FLUXPROCROOT');
+
 while length(FLUXROOT) == 0
     %error('environment variable fluxroot not defined');
     FLUXROOT = input( [ 'environment variable fluxroot not defined; please ' ...
@@ -71,12 +73,15 @@ while length(FLUXROOT) == 0
     end
 end
 
-sitefolder = fullfile(FLUXROOT, 'SiteData');
-outfolder = fullfile(FLUXROOT, 'FluxOut');
+sitefolder = fullfile(FLUXROOT, 'SiteData');  % For fluxall, etc. Backup, too
+tob1folder = fullfile(PROCROOT, 'SiteData');  % Process from SSD(A:)
+outfolder = fullfile(FLUXROOT, 'FluxOut');    % Store 
 
 fluxrc = struct('site_names', {site_names}, ...
                 'aflx_names', {aflx_names}, ...
                 'FLUXROOT', FLUXROOT, ...
+                'FLUXPROCROOT', PROCROOT, ...
+                'tob1folder', tob1folder, ...
                 'sitefolder', sitefolder, ...
                 'outfolder', outfolder);
 
