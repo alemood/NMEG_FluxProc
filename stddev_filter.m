@@ -31,7 +31,7 @@ for i=1:length( filter_windows );
     window = filter_windows( i );
     
     % Slightly increase the std deviation threshold each round
-    if i > 1
+    if i > 1 
         std_dev = std_dev + .15;
     end
     
@@ -48,9 +48,10 @@ for i=1:length( filter_windows );
 end
     
 % Plot final points
-plot( 1:length( filtered_array ), filtered_array, '.k' );
+h = plot( 1:length( filtered_array ), filtered_array, '.k' );
 leg_string{ i + 1 } = 'Filtered data';
 legend( leg_string, 'Location', 'SouthWest' );
+%waitfor( h )
 
 % If needed, convert back to table
 if isa( array_in, 'table' );

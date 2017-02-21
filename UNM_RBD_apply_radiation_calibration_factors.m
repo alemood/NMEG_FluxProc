@@ -253,6 +253,14 @@ switch sitecode
             idx1 = decimal_day > 310.58;
             Par_Avg(idx1) = -Par_Avg(idx1) - 60;
         elseif year_arg == 2016
+            % PAR is missing January to April and later in the year.
+            % Replacing with Burned grass?
+            GLandqc = parse_fluxall_qc_file( UNM_sites.GLand, year_arg );
+            fillPAR = GLandqc.Par_Avg;
+            clear GLandqc
+            idx1 = 1:4962; idx2 = 15428:16962;
+            Par_Avg( idx1 ) = fillPAR( idx1 );
+            Par_Avg( idx2 ) = fillPAR( idx2 );
             % FIXME - drop and use CG3CO vars?
             [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end

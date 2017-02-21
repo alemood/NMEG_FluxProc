@@ -26,7 +26,23 @@ function T_soil_corr =  soil_met_correct( sitecode, year, write_qc, write_rbd )
 % Load data
 sitecode = UNM_sites( sitecode );
 fluxall_T = parse_fluxall_txt_file( sitecode, year );
+qc_T = parse_fluxall_qc_file( sitecode, year );
 
+% -----------------------------------
+% Make a night flag based on PAR < 20
+% -----------------------------------
+if isequal( height( qc_T ) , height( fluxall_T ) )
+%re_par = '([Pp][Aa][Rr]_)(faceup|face_up)(\w+)';
+%par_idx = find( ~cellfun( @isempty, regexp( fluxall_T.Properties.VariableNames, re_par )));
+
+ night_flag =  zeros( height( qc_T ) , 1 );
+ night_flag( find( isnan( qc_T.Par_Avg ) ) ) = NaN;
+ night_flag( find(  qc_T.Par_Avg  < 20 ) ) = 1;
+ night_flag = array2table( night_flag , 'VariableNames', {'NIGHT'} );
+else
+    fprintf('No night flag made for %ss %d QC file',char(sitecode),year)
+end
+clear qc_T
 % -----
 % Get soil water content and soil temperature data from fluxall data
 % -----
@@ -177,7 +193,7 @@ if write_qc
     fname = [outpath sprintf('%s_%d_soilmet_qc.txt', ...
         get_site_name( sitecode ), year )];
     fprintf( 'Writing %s...\n', fname );
-    writetable( [ tstamps T_soil_corr ], fname, 'Delimiter', ',' );
+    writetable( [ tstamps night_flag T_soil_corr ], fname, 'Delimiter', ',' );
 end
 
 %========================REMOVE BAD DATA===============================
@@ -219,11 +235,11 @@ if ~isempty( T_soil_rbd )
     % First set up filter - PJ sites need more filtering
     if sitecode==UNM_sites.PJ || sitecode==UNM_sites.PJ_girdle ...
             || sitecode==UNM_sites.TestSite
-        sd_filter_windows = [ 1, 1, 1, 1, 1, 1 ];
+        sd_filter_windows = [ 14, 14, 14, 14, 14 , 14 ];
     else
         sd_filter_windows = [ 1, 1, 1 ];
     end
-    sd_filter_thresh = 3;
+    sd_filter_thresh = 2.5;
     
     for i = 1:length( T_soil_rbd.Properties.VariableNames )
         colname = T_soil_rbd.Properties.VariableNames{ i };
@@ -234,11 +250,26 @@ if ~isempty( T_soil_rbd )
             filt_col{ ~isnan( col{:,1} ), 1 } = nan;
         else
             % Get the values flagged for std deviation
+            %sprintf('Viewing %s\n',char(colname))
             [ filt_col, ~ ] = stddev_filter( col, ...
                 sd_filter_windows, sd_filter_thresh, sitecode, year );
+            title(colname,'Interpreter','none');
         end
         T_soil_rbd( :, colname ) = filt_col;
+                   
     end
+     % View all soil columns for picking out bad data. 
+        last_mod_date = datenum( [2016,1,1] );
+        T_soil_temp = horzcat( table(fluxall_T.timestamp, ...
+            'VariableNames',{'timestamp'}), ...
+            T_soil_rbd);
+        T_soil_temp.Properties.VariableUnits = ...
+            cellstr( repmat('--', width( T_soil_temp ), 1 ) );            
+        h_viewer = fluxraw_table_viewer(T_soil_temp, sitecode, ...
+            last_mod_date);
+        figure( h_viewer );  % bring h_viewer to the front
+        waitfor( h_viewer );
+        clear T_soil_temp
     
 end % if ~empty
 
@@ -505,7 +536,7 @@ if write_rbd
     fname = [ outpath sprintf('%s_%d_soilmet_qc_rbd.txt', ...
         get_site_name( sitecode ), year )];
     fprintf( 'Writing %s...\n', fname );
-    writetable( [tstamps T_soil_rbd], fname, 'Delimiter', ',' );
+    writetable( [tstamps night_flag T_soil_rbd], fname, 'Delimiter', ',' );
 end
 %        
 %         t0 = now();

@@ -366,7 +366,9 @@ methods
                 char( obj.sitecode ), ...
                 this_year ) );
             load( fname );
+            if ~isnumeric(all_data.date)
             all_data.date = str2num( all_data.date );
+            end
             % This data is always missing the last 30 minute period in the
             % year (only goes to Dec 31, 23:30)
             all_data = all_data( all_data.timestamp <= obj.date_end, : );

@@ -4,7 +4,7 @@
 %sitelist = {UNM_sites.GLand, UNM_sites.SLand, UNM_sites.New_GLand, ...
  sitelist = {   UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle, ...
     UNM_sites.PPine, UNM_sites.MCon, UNM_sites.MCon_SS };
-sitelist = {  UNM_sites.MCon_SS};
+sitelist = {  UNM_sites.SLand};
 %sitelist = {UNM_sites.GLand};
 yearlist = 2016;
 

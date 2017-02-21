@@ -20,8 +20,8 @@ if ~showfig
     set(0,'DefaultFigureVisible','off');
 end
 
-%for k = 5:5
- for k = 2:4;
+%for k = 5
+ for k = 1:4;
     switch k
         case 1
             sitelist = { UNM_sites.JSav, ...
@@ -40,11 +40,11 @@ end
                 UNM_sites.SLand, UNM_sites.GLand, UNM_sites.New_GLand, ...
                 UNM_sites.PPine, UNM_sites.MCon, UNM_sites.MCon_SS};
             yearlist = 2016;
-            partmethod = 'Reddyproc'
+            partmethod = 'Reddyproc';
         case 5
-            sitelist = {UNM_sites.PJ}
-            yearlist = 2014;
-             partmethod = 'eddyproc'
+            sitelist = {UNM_sites.PJ};
+            yearlist = 2016;
+             partmethod = 'Reddyproc';
     end            
 
 for i = 1:length(sitelist);

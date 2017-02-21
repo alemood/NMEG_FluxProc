@@ -166,15 +166,15 @@ if (sitecode==UNM_sites.GLand || sitecode==UNM_sites.SLand) && ...
         { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag );
     amflx_gaps = add_cols( amflx_gaps, qc_tbl.NR_tot, ...
         { 'NETRAD' }, { 'W/m2' } );
- % Add a flag for daytime, PAR > 20 
-    day_f = zeros( height( amflx_gf ) , 1 );
-    day_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
-    day_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.NR_tot > PAR_thresh ) ) = 1;
-      
-    amflx_gf = add_cols( amflx_gf, day_f, ...
-        { 'DAYTIME_F' }, { '--' } ); %NETRAD_F
-    amflx_gaps = add_cols( amflx_gaps, day_f, ...
-        { 'DAYTIME' }, { '--' } );
+%  % Add a flag for daytime, PAR > 20 
+%     day_f = zeros( height( amflx_gf ) , 1 );
+%     day_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+%     day_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.Par_Avg >= PAR_thresh ) ) = 1;
+%       
+%     amflx_gf = add_cols( amflx_gf, day_f, ...
+%         { 'DAYTIME_F' }, { '--' } ); %NETRAD_F
+%     amflx_gaps = add_cols( amflx_gaps, day_f, ...
+%         { 'DAYTIME' }, { '--' } );
     
 else
     NETRAD_new = ( amflx_gf.SW_IN_F + amflx_gf.LW_IN_F ) - ...
@@ -191,19 +191,34 @@ else
     datetick;dynamicDateTicks   
     title('NETRAD');
     
-  %Add a flag for daytime, NETRAD > 0 
-    day_gf_f =  zeros( height( amflx_gf ) , 1 );
-    day_gf_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
-    day_gf_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.Par_Avg > PAR_thresh ) ) = 1;
-       
-    day_gaps_f =  zeros( height( amflx_gaps ) , 1 );
-    day_gaps_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
-    day_gaps_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.NR_tot > PAR_thresh ) ) = 1;
-             
-    amflx_gf = add_cols( amflx_gf, day_gf_f, ...
-        { 'DAYTIME_F' }, { '--' } ); %NETRAD_F
-    amflx_gaps = add_cols( amflx_gaps, day_gaps_f, ...
-        { 'DAYTIME' }, { '--' } );
+%   %Add a flag for daytime, NETRAD > 0 
+%     day_gf_f =  zeros( height( amflx_gf ) , 1 );
+%     day_gf_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+%     day_gf_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.Par_Avg > PAR_thresh ) ) = 1;
+%        
+%     day_gaps_f =  zeros( height( amflx_gaps ) , 1 );
+%     day_gaps_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+%     day_gaps_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.NR_tot > PAR_thresh ) ) = 1;
+%              
+%     amflx_gf = add_cols( amflx_gf, day_gf_f, ...
+%         { 'DAYTIME_F' }, { '--' } );
+%     amflx_gaps = add_cols( amflx_gaps, day_gaps_f, ...
+%         { 'DAYTIME' }, { '--' } );
+end
+if exist('pt_tbl.night')
+    night_flag = pt_tbl.night;
+    amflx_gf = add_cols( amflx_gf, night_flag, ...
+        { 'NIGHT_F' }, { '--' } );
+    amflx_gaps = add_cols( amflx_gaps, night_flag, ...
+        { 'NIGHT' }, { '--' } );
+else
+    night_flag =  zeros( height( amflx_gaps ) , 1 );
+    night_flag( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+    night_flag = qc_tbl.Par_Avg < 20;
+     amflx_gf = add_cols( amflx_gf, night_flag, ...
+        { 'NIGHT_F' }, { '--' } );
+    amflx_gaps = add_cols( amflx_gaps, night_flag, ...
+        { 'NIGHT' }, { '--' } );
 end
 
 

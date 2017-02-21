@@ -28,10 +28,10 @@ for i = 1:length(sitelist);
 
         if process_10hz
             % Start and end dates for making a new fluxall file
-            date_start = datenum(year, 6, 30, 0, 0, 0);
+            date_start = datenum(year, 1, 0, 0, 30, 0);
             % end at 23:30 when processing tob data (not quite sure why)
             % half hour later other times
-            date_end = datenum(year, 7 , 19, 0 , 0, 0);
+            date_end = datenum(year, 12 , 31, 23 , 30, 0);
             
             % Create a new cdp object.
             % Leave 'data_10hz_already_processed' false.
