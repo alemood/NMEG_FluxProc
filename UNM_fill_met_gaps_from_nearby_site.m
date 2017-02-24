@@ -158,6 +158,11 @@ foo = table2array( thisData );
 foo( isnan( foo ) ) = -9999;
 thisData{:,:} = foo;
 
+% Rename variables for processing in MPIs online tool. 
+fprintf('Renaming variables to be compatible with MPIs Reddyproc tool.\n')
+fprintf('Line 162 in UNM_fill_met_gaps_from_nearby_site\n')
+thisData = rename_filled_vars( thisData ) ;
+
 % Write filled data to file except for matlab datenum timestamp column
 if write_output
     outfile = fullfile( get_site_directory( sitecode ), ...
@@ -165,7 +170,7 @@ if write_output
         sprintf( '%s_flux_all_%d_for_gap_filling_filled.txt', ...
         get_site_name( sitecode ), year ) );
     fprintf( 'writing %s\n', outfile );
-    thisData.timestamp = [];
+ %   thisData.timestamp = [];
     write_table_std( outfile, thisData, 'write_units', true );
 end
 
@@ -489,5 +494,28 @@ result = 0;
         result( idx ) = ( x( idx ) * linfit( 1 ) ) + linfit( 2 );
     end
 
+    function tableRename = rename_filled_vars( oldT )
+    % In August 2016, MPI switched the online Reddyproc tool headers.
+    % Rename variables here.
+    % Reformat times 
+    jday = datenum([oldT.year,oldT.month,oldT.day]) - datenum([year,1,0]); 
+    newhour = oldT.hour + oldT.minute./60 ;
+    
+    % Make new table
+    tableRename = table( oldT.year, jday, newhour ,...
+                    oldT.NEE , oldT.LE , oldT.H , oldT.Rg , ...
+                    oldT.Tair, oldT.Tsoil, oldT.rH, oldT.VPD, oldT.Ustar );
+ 	newvarnames = { 'Year'	'DoY'	'Hour'...
+                  'NEE'     'LE'    'H'     'Rg' ...
+                  'Tair'	'Tsoil'	'rH'	'VPD'	'Ustar' };
+    newvarunits = { '--'	'--'	'--' ...
+                  'umolm-2s-1'	'Wm-2'	'Wm-2'	'Wm-2'	...
+                  'degC'	'degC'	'%'	'hPa'	'ms-1' };
+   
+    tableRename.Properties.VariableNames = newvarnames ;
+    tableRename.Properties.VariableUnits = newvarunits ;
+    remove_idx = tableRename.Year ~= year
+    tableRename(remove_idx,:) = [];
+    end
 end
 

@@ -1,11 +1,12 @@
-function [ pt_in_MR, pt_in_GL ] = ...
-    UNM_parse_mpi_eddyproc_output( sitecode, year )
+function [ varargout ] = ...
+    UNM_parse_mpi_eddyproc_output( sitecode, year , varargin )
 % UNM_PARSE_MPI_EDDYPROC_OUTPUT - parse the output of MPI Jena's online
 % gapfilling/partitioning tool into Matlab tables.  In January 2012 Jena
 % updated the tool to merge the old DatasetAfterGapfill.txt into
-% DataSetAfterPartition_GL2010.txt for jobs that requested partitioning.
+% DataSetAfterPartition_GL2010.txt for jobs that requested partitioning. In
+% 2016, MPI updated the tool again
 % This version of the function expects to find two partitioned output 
-% files:
+% files or 1 partitioned file:
 % DataSetAfterPartition_GL2010.txt and DataSetAfterPartition.txt.
 %
 % [ pt_in_MR, pt_in_GL ] = ...
@@ -22,38 +23,62 @@ function [ pt_in_MR, pt_in_GL ] = ...
 % Modified from: UNM_parse_gapfilled_partitioned_output_TWH and 
 %                parse_jena_output by Timothy Hilton.
 
-% Parse the Lasslop 2010 partitioned file
-fname = fullfile( get_site_directory( sitecode ), ...
-    'processed_flux', ...
-    sprintf( 'DataSetafterFluxpartGL2010_%d.txt', year ) );
+mpi_vers = varargin{1};
+% ------------------------------------------
+% Parse the combinged Reichstein/Lasslop partitioned file
+if strcmpi(mpi_vers,'mpi_current')
+    fname = fullfile( get_site_directory( sitecode ), ...
+        'processed_flux', ...
+        sprintf( 'DataSetafterFluxpartMRGL_%d.txt', year ) );
 
-[ ~, fname_short, ext ] = fileparts( fname );
-fprintf( 'reading %s%s... ', fname_short, ext );
+    [ ~, fname_short, ext ] = fileparts( fname );
+    fprintf( 'reading %s%s... ', fname_short, ext );
+    
+    try
+        pt_in_MRGL = parse_eddyproc_output( fname , year , mpi_vers );  %GL == Gita Lasslop
+    catch err
+        error( sprintf( 'error parsing %s', fname) );
+    end
+    fprintf( 'done\n');
+        varargout{1} = pt_in_MRGL;
+elseif strcmpi(mpi_vers,'mpi_old')
+    % ---------------------------------------
+    % Parse the Lasslop 2010 partitioned file
+    fname = fullfile( get_site_directory( sitecode ), ...
+        'processed_flux', ...
+        sprintf( 'DataSetafterFluxpartGL2010_%d.txt', year ) );
 
-% Exception handling
-try
-    pt_in_GL = parse_eddyproc_output( fname );  %GL == Gita Lasslop
-catch err
-    error( sprintf( 'error parsing %s', fname) );
+    [ ~, fname_short, ext ] = fileparts( fname );
+    fprintf( 'reading %s%s... ', fname_short, ext );
+
+    % Exception handling
+    try
+        pt_in_GL = parse_eddyproc_output( fname , year , mpi_vers );  %GL == Gita Lasslop
+    catch err
+        error( sprintf( 'error parsing %s', fname) );
+    end
+    fprintf( 'done\n');
+    varargout{1} = pt_in_GL;
+    % ------------------------------------------
+    % Parse the Reichstein 2005 partitioned file
+    fname = fullfile( get_site_directory( sitecode ), ...
+        'processed_flux', ...
+        sprintf( 'DataSetafterFluxpart_%d.txt', year ) );
+
+    [ ~, fname_short, ext ] = fileparts( fname );
+    fprintf( 'reading %s%s... ', fname_short, ext );
+
+    try
+        pt_in_MR = parse_eddyproc_output( fname , year , mpi_vers );  %MR == Markus Reichstein
+    catch err
+        error( sprintf( 'error parsing %s', fname ) );
+    end
+    varargout{2} = pt_in_MR;
 end
+
 fprintf( 'done\n');
 
-% Parse the Reichstein 2005 partitioned file
-fname = fullfile( get_site_directory( sitecode ), ...
-    'processed_flux', ...
-    sprintf( 'DataSetafterFluxpart_%d.txt', year ) );
-
-[ ~, fname_short, ext ] = fileparts( fname );
-fprintf( 'reading %s%s... ', fname_short, ext );
-
-try
-    pt_in_MR = parse_eddyproc_output( fname );  %MR == Markus Reichstein
-catch err
-    error( sprintf( 'error parsing %s', fname ) );
-end
-fprintf( 'done\n');
-
-    function out = parse_eddyproc_output( fname )
+    function out = parse_eddyproc_output( fname , varargin )
         % PARSE_EDDYPROC_OUTPUT - parses an output file from the MPI online
         % gapfilling/partitioning tool (used to be parse_jena_output).
         %
@@ -74,7 +99,8 @@ fprintf( 'done\n');
         %
         % SEE ALSO
         %     table, replace_badvals
-
+        year = varargin{1};
+        mpi_vers = varargin{2};
         
         fid = fopen(fname, 'r');
         line1 = fgetl(fid);
@@ -97,14 +123,20 @@ fprintf( 'done\n');
         out = array2table( arr, 'VariableNames', vars );
         % Replace -9999 with matlab NaNs
         out = replace_badvals( out, [-9999], 1e-6 );
-        % Add a timestamp
-        seconds = zeros( size( out.Year ) );
-        out.timestamp = datenum( out.Year, ...
-            out.Month, ...
-            out.Day, ...
-            out.Hour, ...
-            out.Minute, ...
-            seconds );
+        % Add a timestamp. Switch based on MPI eddyproc version
+        
+        if strcmpi( mpi_vers ,'mpi_old' )
+            seconds = zeros( size( out.Year ) );
+            out.timestamp = datenum( out.Year, ...
+                out.Month, ...
+                out.Day, ...
+                out.Hour, ...
+                out.Minute, ...
+                seconds );
+        elseif strcmpi(mpi_vers,'mpi_current')    
+            jday = out.DoY + out.Hour./24;
+            out.timestamp = jday + datenum([year,1,0]);
+        end          
         
     end
 end

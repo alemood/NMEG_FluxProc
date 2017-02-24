@@ -72,9 +72,22 @@ end
 % Parse the QC file
 qc_tbl = parse_fluxall_qc_file( sitecode, year );
 
-% Parse gapfilled and partitioned fluxes from online MPI eddyproc tool
-[ pt_MR_tbl, pt_GL_tbl ] = ...
-    UNM_parse_mpi_eddyproc_output( sitecode, year );
+% Parse gapfilled and partitioned fluxes from online MPI eddyproc tool.
+% Starting at the end of 2016, MPIs tool changed output format. Everything
+% is one table.
+if strcmp( args.Results.gf_part_source, 'old_eddyproc' )
+    warning('MPI Eddyproc outputs changed in August 2016')
+    fprintf('Make sure you are using the correct partitioned file\n')
+    
+
+[  pt_GL_tbl , pt_MR_tbl ] = ...
+    UNM_parse_mpi_eddyproc_output( sitecode, year ,'mpi_old');
+
+
+elseif strcmp( args.Results.gf_part_source, 'eddyproc') 
+[ pt_MRGL_tbl ] = ...
+    UNM_parse_mpi_eddyproc_output( sitecode, year , 'mpi_current');
+end
 
 % Parse gapfilled fluxes from Reddyproc tool
 try
@@ -106,6 +119,20 @@ fprintf( 'synchronizing timestamps... ');
 t0 = now(); % record running time
 
 % Max/min times in all tables' timestamps
+if strcmp( args.Results.gf_part_source, 'eddyproc') 
+    
+t_min = min( [ qc_tbl.timestamp; data.timestamp; ...
+               pt_MRGL_tbl.timestamp ] );
+t_max = max( [ qc_tbl.timestamp; data.timestamp; ...
+               pt_MRGL_tbl.timestamp ] ); 
+           
+[ qc_tbl, data ] = merge_tables_by_datenum( qc_tbl, data, ...
+    'timestamp', 'timestamp', 3, t_min, t_max );
+
+[ pt_MRGL_tbl, data ] = merge_tables_by_datenum( pt_MRGL_tbl, data, ...
+    'timestamp', 'timestamp', 3, t_min, t_max );
+           
+elseif strcmp( args.Results.gf_part_source, 'old_eddyproc') 
 t_min = min( [ qc_tbl.timestamp; data.timestamp; ...
                pt_GL_tbl.timestamp; pt_MR_tbl.timestamp ] );
 t_max = max( [ qc_tbl.timestamp; data.timestamp; ...
@@ -119,6 +146,7 @@ t_max = max( [ qc_tbl.timestamp; data.timestamp; ...
 
 [ pt_MR_tbl, data ] = merge_tables_by_datenum( pt_MR_tbl, data, ...
     'timestamp', 'timestamp', 3, t_min, t_max );
+end
 
 if strcmpi(args.Results.gf_part_source, 'Reddyproc')
     [ pt_MR_tbl_R, data ] = merge_tables_by_datenum( pt_MR_tbl_R, data, ...
@@ -134,10 +162,16 @@ data = table_fill_timestamps( data, 'timestamp', ...
     't_min', Jan1, 't_max', Dec31 );
 qc_tbl = table_fill_timestamps( qc_tbl, 'timestamp', ...
     't_min', Jan1, 't_max', Dec31 );
-pt_GL_tbl = table_fill_timestamps( pt_GL_tbl, 'timestamp', ...
-    't_min', Jan1, 't_max', Dec31 );
-pt_MR_tbl = table_fill_timestamps( pt_MR_tbl, 'timestamp', ...
-    't_min', Jan1, 't_max', Dec31 );
+switch  args.Results.gf_part_source;
+    case 'eddyproc'
+        pt_MRGL_tbl = table_fill_timestamps( pt_MRGL_tbl, 'timestamp', ...
+            't_min', Jan1, 't_max', Dec31 );
+    case 'old_eddyproc'
+        pt_GL_tbl = table_fill_timestamps( pt_GL_tbl, 'timestamp', ...
+            't_min', Jan1, 't_max', Dec31 );
+        pt_MR_tbl = table_fill_timestamps( pt_MR_tbl, 'timestamp', ...
+            't_min', Jan1, 't_max', Dec31 );
+end
 
 if strcmpi(args.Results.gf_part_source, 'Reddyproc')
     pt_MR_tbl_R = table_fill_timestamps( pt_MR_tbl_R, 'timestamp', ...
@@ -147,6 +181,8 @@ end
 % Merge gapfilling/partitioning output into one table so we don't have
 % to worry about which variables are in which table
 if strcmp( args.Results.gf_part_source, 'eddyproc' )
+    pt_tbl = pt_MRGL_tbl;
+elseif strcmp( args.Results.gf_part_source, 'old+eddyproc' )
     cols = setdiff( pt_MR_tbl.Properties.VariableNames, ...
         pt_GL_tbl.Properties.VariableNames );
     pt_tbl = [ pt_GL_tbl, pt_MR_tbl( :, cols ) ];
