@@ -2,7 +2,8 @@ function [ amflx_gaps, amflx_gf ] = prepare_AF_output_data( sitecode, ...
                                                             qc_tbl, ...
                                                             pt_tbl, ...
                                                             soil_tbl, ...
-                                                            keenan )
+                                                            keenan,...
+                                                            varargin)
 % PREPARE_AF_OUTPUT_DATA - prepare observed fluxes for writing to
 %   Ameriflux files.  Mostly creates QC flags and gives various 
 %   observations the names they should have for Ameriflux.
@@ -41,15 +42,17 @@ args.addRequired( 'sitecode', @(x) ( isintval(x) | isa( x, 'UNM_sites' )));
 args.addRequired( 'qc_tbl', @(x) ( isa( x, 'table' )));
 args.addRequired( 'pt_tbl', @(x) ( isa( x, 'table' )));
 args.addRequired( 'soil_tbl', @(x) ( isa( x, 'table' )));
+args.addOptional( 'version', 'in_house', @ischar);
 
 % parse optional inputs
-args.parse( sitecode, qc_tbl, pt_tbl, soil_tbl );
+args.parse( sitecode, qc_tbl, pt_tbl, soil_tbl, varargin{:} );
 
 % place user arguments into variables
 sitecode = args.Results.sitecode;
 qc_tbl = args.Results.qc_tbl;
 pt_tbl = args.Results.pt_tbl;
 soil_tbl = args.Results.soil_tbl;
+vers = args.Results.version;
 
 soil_moisture = false; % turn off soil moisture processing for now
 
@@ -64,6 +67,14 @@ dummy = repmat( -9999, size( qc_tbl, 1 ), 1 );
 timestamp = qc_tbl.timestamp; % Will be stripped later
 % Create an ISO standardized timestamp and convert to numeric.
 % Need to use hig precision when writing this to file.
+if strcmpi(vers,'in_house')
+TIMESTAMP = str2num( datestr( timestamp, 'YYYYmmDDHHMMSS' ));
+[ YEAR, ~, ~ ] = datevec( timestamp );
+DTIME = timestamp - datenum( YEAR, 1, 1 ) + 1;
+amflx_gf = table( timestamp, TIMESTAMP , YEAR, DTIME );
+amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMMSS'...
+    'YYYY', 'DDD.D' };    
+else
 TIMESTAMP_END = str2num( datestr( timestamp, 'YYYYmmDDHHMM' ));
 TIMESTAMP_START = str2num( datestr( timestamp - datenum([0,0,0,0,30,0]),...
     'YYYYmmDDHHMM'));
@@ -72,6 +83,7 @@ DTIME = timestamp - datenum( YEAR, 1, 1 ) + 1;
 amflx_gf = table( timestamp, TIMESTAMP_START, TIMESTAMP_END , YEAR, DTIME );
 amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMM', 'YYYYMMDDHHMM'...
     'YYYY', 'DDD.D' };
+end
 
 amflx_gaps = amflx_gf;
 
@@ -85,7 +97,7 @@ amflx_gaps = amflx_gf;
 
 % Tair
 % FIXME - this is sonic temperature (Tdry - 273.15), not hmp
-% temperature. See issue 12
+% temperature. See issue 12. Line below comments is an attempt to fix. 
 TA_flag = verify_gapfilling( pt_tbl.Tair_f, qc_tbl.Tdry - 273.15, 1e-3 );
 amflx_gf = add_cols( amflx_gf, pt_tbl.Tair_f, ...
                      { 'TA_F' }, { 'deg C' }, TA_flag );
@@ -115,11 +127,20 @@ amflx_gaps = add_cols( amflx_gaps, qc_tbl.sw_incoming, ...
 qc_tbl.NR_tot( Rg_flag ) = nan;
 
 % Precip
-% Gapfilled precip should be found in MPI files
+% Gapfilled precip should be found in MPI files pre 2016. The try/catch
+% statement will deal with 2016+ files, which have no precip (*MRGL*)
+try
 P_flag = verify_gapfilling( pt_tbl.Precip, qc_tbl.precip, 1e-4 );
 amflx_gf = add_cols( amflx_gf, pt_tbl.Precip, ... % P_F
     { 'P_F' }, { 'mm' }, P_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
+catch
+P_flag = NaN( height(pt_tbl) , 1 );
+amflx_gf = add_cols( amflx_gf, 	qc_tbl.precip, ... % P_F
+    { 'P_F' }, { 'mm' }, P_flag );
+amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
+end
+
 
 %%%% % % % % % % % %
 % FIXME: for now gapfilling of longwave occurs here
@@ -139,10 +160,12 @@ amflx_gaps = add_cols( amflx_gaps, qc_tbl.lw_incoming, ...
                        { 'LW_IN' }, { 'W/m2' } );
                    
 figure();
-plot(timestamp, amflx_gf.LW_IN_F, '.r');
-hold on;
-plot(timestamp, amflx_gaps.LW_IN, '.b');
-title('LW_IN');
+plot(timestamp, [ amflx_gf.LW_IN_F, amflx_gaps.LW_IN ] ,'.');
+datetick;dynamicDateTicks
+title('LW\_IN');
+
+% Net radiation threshold for photosynthetic goings-ons [W m-2]
+PAR_thresh = 20;
                    
 % Recalculate NETRAD
 if (sitecode==UNM_sites.GLand || sitecode==UNM_sites.SLand) && ...
@@ -152,11 +175,19 @@ if (sitecode==UNM_sites.GLand || sitecode==UNM_sites.SLand) && ...
         { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag );
     amflx_gaps = add_cols( amflx_gaps, qc_tbl.NR_tot, ...
         { 'NETRAD' }, { 'W/m2' } );
+%  % Add a flag for daytime, PAR > 20 
+%     day_f = zeros( height( amflx_gf ) , 1 );
+%     day_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+%     day_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.Par_Avg >= PAR_thresh ) ) = 1;
+%       
+%     amflx_gf = add_cols( amflx_gf, day_f, ...
+%         { 'DAYTIME_F' }, { '--' } ); %NETRAD_F
+%     amflx_gaps = add_cols( amflx_gaps, day_f, ...
+%         { 'DAYTIME' }, { '--' } );
     
 else
     NETRAD_new = ( amflx_gf.SW_IN_F + amflx_gf.LW_IN_F ) - ...
         ( qc_tbl.sw_outgoing + qc_tbl.lw_outgoing );
-    
     NETRAD_flag = verify_gapfilling( NETRAD_new, qc_tbl.NR_tot, 1e-1 );
     amflx_gf = add_cols( amflx_gf, NETRAD_new, ...
         { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag ); %NETRAD_F
@@ -164,11 +195,42 @@ else
         { 'NETRAD' }, { 'W/m2' } );
     
     figure();
-    plot(timestamp, amflx_gf.NETRAD_F, '.r');
-    hold on;
-    plot(timestamp, amflx_gaps.NETRAD, '.b');
+    plot(timestamp,...
+        [amflx_gf.NETRAD_F,amflx_gaps.NETRAD], '.');
+    datetick;dynamicDateTicks   
     title('NETRAD');
+    
+%   %Add a flag for daytime, NETRAD > 0 
+%     day_gf_f =  zeros( height( amflx_gf ) , 1 );
+%     day_gf_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+%     day_gf_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.Par_Avg > PAR_thresh ) ) = 1;
+%        
+%     day_gaps_f =  zeros( height( amflx_gaps ) , 1 );
+%     day_gaps_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+%     day_gaps_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.NR_tot > PAR_thresh ) ) = 1;
+%              
+%     amflx_gf = add_cols( amflx_gf, day_gf_f, ...
+%         { 'DAYTIME_F' }, { '--' } );
+%     amflx_gaps = add_cols( amflx_gaps, day_gaps_f, ...
+%         { 'DAYTIME' }, { '--' } );
 end
+if exist('pt_tbl.night')
+    night_flag = pt_tbl.night;
+    amflx_gf = add_cols( amflx_gf, night_flag, ...
+        { 'NIGHT_F' }, { '--' } );
+    amflx_gaps = add_cols( amflx_gaps, night_flag, ...
+        { 'NIGHT' }, { '--' } );
+else
+    night_flag =  zeros( height( amflx_gaps ) , 1 );
+    night_flag( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+    night_flag = qc_tbl.Par_Avg < 20;
+     amflx_gf = add_cols( amflx_gf, night_flag, ...
+        { 'NIGHT_F' }, { '--' } );
+    amflx_gaps = add_cols( amflx_gaps, night_flag, ...
+        { 'NIGHT' }, { '--' } );
+end
+
+
 %%%% % % % % % % % %
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -213,8 +275,13 @@ clear headers units;
 FC_flag = pt_tbl.NEE_fqc > 0;
 amflx_gf = add_cols( amflx_gf, pt_tbl.NEE_f, ...
     { 'FC_F' }, { 'mumol/m2/s' }, FC_flag );
+try %FIXME - hacky way to allow for Reddyproc NEE_orig column 
 amflx_gaps = add_cols( amflx_gaps, pt_tbl.NEEorig, ...
     { 'FC' }, { 'mumol/m2/s' } );
+catch
+    amflx_gaps = add_cols( amflx_gaps, pt_tbl.NEE_orig, ...
+    { 'FC' }, { 'mumol/m2/s' } );
+end
 
 %LE_flag = verify_gapfilling( pt_tbl.LE_f, qc_tbl.HL_wpl_massman, 1e-2 );
 LE_flag = pt_tbl.LE_fqc > 0;
@@ -260,12 +327,18 @@ clear headers units;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Make a large table of partitioned values first
+try % Pre-2016 MPI online partitioner files
 part_mat = [ pt_tbl.GPP_f, pt_tbl.Reco, ...
              pt_tbl.GPP_HBLR, pt_tbl.Reco_HBLR, ...
              pt_tbl.Reco_HBLR_amended, pt_tbl.amended_flag ];
+catch % Post-2016 MPI online partitioner files
+    part_mat = [ pt_tbl.GPP_f, pt_tbl.Reco, ...
+             pt_tbl.GPP_DT, pt_tbl.Reco_DT, ...
+             pt_tbl.Reco_HBLR_amended, pt_tbl.amended_flag ];
+end
 headers =  {'GPP_F_MR2005', 'RECO_MR2005', ...
             'GPP_GL2010', 'RECO_GL2010', ...
-            'RECO_GL2010_amended', 'amended_FLAG' };
+            'RECO_GL2010_amended', 'amended_FLAG' };    
 units =    { 'mumol/m2/s', 'mumol/m2/s', ...
              'mumol/m2/s', 'mumol/m2/s', 'mumol/m2/s', '--' };
 

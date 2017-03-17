@@ -10,6 +10,7 @@ function tab = assemble_multi_year_ameriflux( sitecode, years, varargin )
 %    years: integer array; array of years
 % PARAMETER-VALUE PAIRS
 %    suffix: string; 'gapfilled' | {'with_gaps'} | {'soil'}
+%    releasename: string; path to ameriflux files
 %
 % OUTPUTS:
 %    tab: table containing the amerflux data for all requested years
@@ -25,39 +26,66 @@ args.addRequired( 'sitecode', @(x) ( isnumeric(x) | isa( x, 'UNM_sites' ) ) );
 args.addRequired( 'years', @isnumeric );
 args.addParameter( 'suffix', 'with_gaps', ...
     @(x) ismember( x, { 'gapfilled', 'with_gaps', 'soil' } ) );
+args.addParameter( 'path_to_aflx', '',@ischar)
 args.parse( sitecode, years, varargin{ : } );
 args = args.Results;
 
 sitecode = args.sitecode;
 years = args.years;
+if strcmpi(args.suffix,'soil')
+    soil = true;
+end
 
 % parse ASCII Ameriflux files
 all_data = {};
 
 % Pop up a dialog asking user to select release folder
-releasename = uigetdir(fullfile( getenv( 'FLUXROOT' ), ...
+if soil
+    % Soil 'release' is just QCed soil data.
+    releasename = fullfile(getenv('FLUXROOT'),'SiteData',...
+        char(sitecode),'processed_soil');
+elseif exist(args.path_to_aflx) ~= 7 | isempty(args.path_to_aflx)
+    releasename = uigetdir(fullfile( getenv( 'FLUXROOT' ), ...
         'Ameriflux_files'));
+else
+    releasename = args.path_to_aflx;
+end
 %releasename = fullfile( getenv( 'FLUXROOT' ), ...
 %        'Ameriflux_files', 'FLUXNET2015');
 
 for i = 1:numel( years );
-    % get this year's ameriflux data
-    fname = sprintf( '%s_%d_%s.txt', ...
-        UNM_sites_info( args.sitecode ).ameriflux, ...
-        years( i ), ...
-        args.suffix );
-    fprintf( 'parsing %s\n', fname );
-    fname = fullfile( releasename, fname );
-    if exist( fname )
-        this_data = parse_ameriflux_file( fname );
-        
-        % Get the timestamp for the table
-        this_data = ameriflux_table_get_tstamp( this_data );
-        
-        all_data{ end+1 } = this_data;
-        clear this_data;
-    else
-        fprintf( 'file does not exist - moving on\n' );
+    if soil
+        fname = sprintf('%s_%d_soilmet_qc_rbd.txt', char(sitecode) , years( i ) );
+        fprintf( 'parsing %s\n', fname );
+        fpath = fullfile( releasename, fname );
+        if exist( fpath )
+            this_data = parse_soilmet_qc_file( sitecode, ...
+                years( i ), ...
+                'suffix','qc_rbd' );
+            all_data{ end+1 } = this_data;
+            clear this_data;
+        else
+            fprintf( 'file does not exist - moving on...\n' );
+        end      
+    elseif ~soil
+        % get this year's ameriflux data
+        fname = sprintf( '%s_%d_%s.txt', ...
+            UNM_sites_info( args.sitecode ).ameriflux, ...
+            years( i ), ...
+            args.suffix );
+        fprintf( 'parsing %s\n', fname );
+        fname = fullfile( releasename, fname );
+        if exist( fname )
+            this_data = parse_ameriflux_file( fname );
+            
+            % Get the timestamp for the table
+            this_data = ameriflux_table_get_tstamp( this_data );
+            
+            all_data{ end+1 } = this_data;
+            clear this_data;
+        else
+            fprintf( 'file does not exist - moving on\n' );
+        end
     end
 end
 

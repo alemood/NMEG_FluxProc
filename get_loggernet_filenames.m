@@ -76,10 +76,16 @@ fnames = fnames( idx );
 idx = find( ( dns >= date_start ) & ( dns <= date_end ) );
 % if looking at TOA5 files, included the latest file dated *before* the
 % start date -- it could contain data from the requested range
+if isempty(idx) && strcmpi( type, 'TOA5' );
+    [c idx_early] = min (abs ( dns - date_start ));
+    [c idx_late] = min ( abs (dns - date_end ));
+    idx = sort([idx_early idx_late]);
+end   
+    
 %FIXME - If all data is in one TOA5 file MATLAB does not find a TOA5 file
-if all( dns < date_start ) & strcmpi( type, 'TOA5' )
+if all( dns < date_start ) && strcmpi( type, 'TOA5' )
     idx = numel( dns );
-elseif ( not(strcmp( type, 'TOB1' ))) & ( idx( 1 ) ~= 1 )
+elseif ( not(strcmp( type, 'TOB1' ))) & ( idx( 1 ) ~= 1 ) % FIXME, this doesn't do anything that seems to make sense, 
     idx = [ idx( 1 ) - 1, idx ];
 end
 fnames = fnames( idx );

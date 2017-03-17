@@ -21,8 +21,8 @@ while getopts ":d" opt; do
   esac
 done
 
-URL_root=http://www.bgc-jena.mpg.de/~MDIwork/eddyproc/output/
-
+ URL_root=http://www.bgc-jena.mpg.de/~MDIwork/eddyproc/output/ 
+#  URL_root=http://www.bgc-jena.mpg.de/REddyProc/brew/results1.rhtml?fileId=
 echo num: $num
 
 forminfo_file=http://www.bgc-jena.mpg.de/~MDIwork/eddyproc/output/$num/formInfo.prop

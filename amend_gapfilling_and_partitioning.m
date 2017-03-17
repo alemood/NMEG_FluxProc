@@ -43,7 +43,14 @@ data_in = args.Results.data_in;
 
 % Make a copy of data_in to correct and add an "amended" respiration col
 data_amended = data_in;
+try % Pre-Aug 2016 MPI partitioner headers
 data_amended.Reco_HBLR_amended = data_amended.Reco_HBLR;
+catch %post Aug 2016 MPI partitioner headers
+    % Keep the HBLR suffix. Saves having to change lots of variables below.
+    % It's usually thrown out in the ameriflux file maker anyways.
+data_amended.Reco_HBLR_amended = data_amended.Reco_DT;
+end
+
 
 switch site
   case UNM_sites.JSav
@@ -316,7 +323,11 @@ switch site
 end
 
 flag = repmat( false, height( data_amended ), 1 );
+try
 flag( data_amended.Reco_HBLR_amended ~= data_in.Reco_HBLR ) = true;
+catch
+flag( data_amended.Reco_HBLR_amended ~= data_in.Reco_DT ) = true;
+end
 data_amended.amended_flag = flag;
 
 function data_norm = norm( in, norm_to_max )

@@ -94,7 +94,7 @@ ylabel( axh, sprintf( '%s [%s]', t_str, tbl.Properties.VariableUnits{ 1 } ) );
 
 function cur_col = prev_but_cbk( source, eventdata, ...
                                  nfields, axh, fh, tbl, pbh_next )
-    %% change the plot to the previous data field
+    % change the plot to the previous data field
     
     % decrement cur_col
     ud = get( fh, 'UserData' );
@@ -115,7 +115,7 @@ function cur_col = prev_but_cbk( source, eventdata, ...
     
 function cur_col = next_but_cbk( source, eventdata, ...
                                  nfields, axh, fh, tbl, pbh_prev )
-    %% change the plot to the previous data field
+    % change the plot to the previous data field
     
     % decrement cur_col
     ud = get( fh, 'UserData' );
@@ -138,7 +138,7 @@ function cur_col = next_but_cbk( source, eventdata, ...
     
 function zoom_but_cbk( source, eventdata, ...
                        nfields, axh, fh, tbl )
-%% change the plot to the previous data field
+% change the plot to the previous data field
 
 ud = get( fh, 'UserData' );
 cur_ylim = get( axh, 'YLim' );

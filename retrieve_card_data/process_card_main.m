@@ -80,6 +80,10 @@ switch args.Results.data_location;
         % FIXME - need a more flexible way to determine the drive letter.
         % locate_drive( 'Removable Disk' ) doesn't work for card reader.
         data_location = 'g:\';
+    case 'wireless'
+        % When fetching data from socorro sftp, we can use the
+        % dataloggers.yaml config to pick out pieces to find data_location
+        data_location = fullfile(get_site_directory(this_site),'wireless_data');
     otherwise
         data_location = args.Results.data_path;
 end
@@ -95,14 +99,41 @@ fprintf( 'logging session to %s\n', fname_log );
 diary( fname_log );
 
 %--------------------------------------------------------------------------
+% DOWNLOAD WIRELESS DATA HERE
+if strcmp(args.Results.data_location , 'wireless' )
+    % If this was downloaded today, skip
+    remote_dir = dir(data_location);
+    remote_dir = remote_dir(~ismember({remote_dir.name},{'.','..'})); %remove '.' directories
+    remote_dir = remote_dir([remote_dir.isdir]~=1) ;                  % remove other directories
+    remote_dir = struct2table(remote_dir); % Structures are a bit cumbersome, convert to table
+    % Get file creation timestam
+    [ts_last_dl idx] = max( remote_dir.datenum ); % Find most recent download
+    fprintf(' Last wireless download occured %s\n', char( remote_dir.date( idx )))
+    % If it wasn't downloaded today, download
+    if (floor(now)-floor(ts_last_dl)) ~= 0  % should be 0 if last download was from the previous day
+    fprintf(' Downloading all dataloggers from Socrro.\n')
+    remote_loc = harvest_sftp( this_site ); %FIX ME. Remote_loc is not necesary
+    else
+    fprintf(' Most recent download was today. Skipping wireless download\n') 
+    data_location = fullfile(get_site_directory(this_site),'wireless_data');
+        
+    end
+end
+
+%--------------------------------------------------------------------------
 % VALIDATE the card data directory and files
 
 % Get data files
 fprintf( 'validating files in %s\n', data_location );
-card_files = dir( fullfile( data_location, '*.dat' ) );
+% May be an 8100 card with folders
+if strcmpi(logger_name, 'soilflux')
+    card_files = dir( data_location ) ;
+else
+    card_files = dir( fullfile( data_location, '*.dat' ) );
+end
 
 % Error if data_loc is empty
-if isempty( card_files )
+if isempty( card_files ) & ~card_folders.isdir
     msg = sprintf( 'no data files found in %s', data_location );
     error( msg );
 end
@@ -149,6 +180,28 @@ first_tokens = unique( first_tokens );
 if length( first_tokens )==1 && strcmp( first_tokens, num2str(dl_conf.ID))
     fprintf( 'Card file IDs (%s) match configured datalogger.\n', ...
         first_tokens{1} )
+elseif  dl_wireless
+    %Find just the flux table and change file name to fileID.flux|ts_data
+    %FIXME - This is MESSY and may not work if there are more than 2 files in dir. 
+    fileID = conf.dataloggers.ID;
+    flux_tokens = cellfun( @(x) regexp(x{1},'NMUFN.*.flux','match'),...
+         fname_tokens, 'UniformOutput', false );
+    flux_tokens{~cellfun(@isempty,flux_tokens)};
+    [copy_succes,msg,msgid] = copyfile(...
+        fullfile(data_location,strcat(char(flux_tokens{1}),'.dat')),...
+        fullfile(data_location,[num2str(fileID),'.flux.dat']));
+    delete(fullfile(data_location,strcat(char(flux_tokens{1}),'.dat')));
+    % Just the 10hz
+    ts_tokens = cellfun( @(x) regexp(x{1},'NMUFN.*.ts_data','match'),...
+        fname_tokens, 'UniformOutput', false );
+    ts_tokens{~cellfun(@isempty,ts_tokens)};
+    [copy_succes,msg,msgid] = copyfile(...
+        fullfile(data_location,strcat(char(ts_tokens{2}),'.dat')),...
+        fullfile(data_location,[num2str(fileID),'.ts_data.dat']));
+    delete( fullfile(data_location,strcat(char(ts_tokens{2}),'.dat')));
+ 
+     % rename to use fileID similar to card data
+   
 else
     error( 'Configured datalogger ID and card filenames do not match!' );
 end
@@ -156,6 +209,7 @@ end
 
 %--------------------------------------------------------------------------
 % copy the data from the card to the computer's hard drive
+% 
 try    
     fprintf(1, '\n----------\n');
     fprintf(1, 'COPYING FROM CARD TO LOCAL DISK...\n');
@@ -173,6 +227,9 @@ end
 
 % If this is a flux datalogger card convert the data
 if strcmp( logger_name, 'flux' )
+    % Check to see if data is from wireless. If so, change file names to
+    % end in .flux or .ts_data
+    
     % convert the thirty-minute data to TOA5 file
     try
         fprintf(1, '\n----------\n');
@@ -224,6 +281,25 @@ if strcmp( logger_name, 'flux' )
             return
         end
     end
+end
+
+% If this is a secondary logger, convert the data
+if regexp(logger_name,'soil|precip|sap')
+     % convert the thirty-minute data to TOA5 file
+    try
+        fprintf(1, '\n----------\n');
+        fprintf(1, 'CONVERTING SECONDARY THIRTY-MINUTE DATA TO TOA5 FORMAT...\n');
+        [soilmet_convert_success, toa5_fname] = thirty_min_2_TOA5(...
+            this_site, raw_data_dir , 'logger_name' , logger_name);
+        fprintf(1, ' Done\n');
+    catch err
+        soilmet_convert_success = false;
+        % echo the error message
+        fprintf( 'Error converting 30-minute data to TOA5 file.' )
+        disp( getReport( err ) );
+        main_success = 0;
+    end
+% End secondary logger conversions    
 end
 
 %copy uncompressed TOB1 data to MyBook
@@ -284,7 +360,8 @@ try
     if args.Results.interactive
         fprintf(1, 'TRANSFERING COMPRESSED RAW DATA TO EDAC...\n');
         h = msgbox( 'click to begin FTP transfer', '' );
-        waitfor( h );
+        % Why wait?
+        %waitfor( h );
         transfer_2_edac(this_site, card_archive_name)
         fprintf(1, 'Done transferring.\n');
     else
@@ -310,7 +387,7 @@ save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', ['card_restart_',char(UNM_sites
 %     end
 % --------------------------------------------------
 % the data are now copied from the card and backed up.
-%%
+
 % If this is a flux datalogger card process the data
 if strcmp( logger_name, 'flux' )
     % merge the new data into the fluxall file
@@ -374,6 +451,7 @@ if strcmp( logger_name, 'flux' )
 
 % End flux card data processing
 end
+
 
 % close the log file
 diary off

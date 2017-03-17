@@ -84,6 +84,10 @@ fprintf( 1, 'writing %s for %s use...\n', fname, version );
 
 fid = fopen( fname, 'w+' );
 
+if ~strcmpi(pwd,'C:\Code\NMEG_FluxProc')
+    cd('C:\Code\NMEG_FluxProc');
+end
+
 if strcmp(version,'in_house')  
 fprintf( fid, 'Site name: %s\n', aflx_site_name );
 fprintf( fid, 'Email: %s\n', email );
@@ -120,7 +124,8 @@ fclose( fid );
 
 
 % Beware of ints when converting table to array!
-% Use high precision so TIMESTAMP is represented correctly
+% Use high precision so TIMESTAMP is represented correctly 
+% af tbl has a row of the past years data on New Years Eve. Remove for Ameriflux
 if strcmp(version,'fluxnet')
     data = table2array( af_tbl(2:end,:) );
 else

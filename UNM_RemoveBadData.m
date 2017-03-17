@@ -552,10 +552,15 @@ for i=1:numel( headertext );
             strcmp('rh_hmp', headertext{i}) == 1 || ...
             strcmp('rh_hmp_4_Avg', headertext{i}) == 1 || ...
             strcmp('RH',headertext{i}) == 1 || ...
+            strcmp('RH_1p5_Avg', headertext{i})==1 || ...
             strcmp('RH_2_Avg',headertext{i}) == 1 || ...
             strcmp('RH_10_Avg',headertext{i}) == 1 || ...
             strcmp('RH_6p85_Avg', headertext{i})==1 || ...
-            strcmp('RH_24_Avg', headertext{i})==1
+            strcmp('RH_8p75_Avg', headertext{i})==1 || ...
+            strcmp('RH_16_Avg', headertext{i})==1 || ...
+            strcmp('RH_24_Avg', headertext{i})==1 || ...
+            strcmp('RH_36_Avg', headertext{i})==1
+        
         rH = data(:,i);
         %strcmp('RH_3p7_Avg',headertext{i}) == 1 || ...
         % strcmp('RH_2',headertext{i}) == 1 || ...
@@ -563,7 +568,7 @@ for i=1:numel( headertext );
         %Fixed scaling the rH now on a per rH value to account for
         %the scale changes associated with program changes in the
         %fluxall.
-        
+    
         scale = find(rH > 1.1);
         rH(scale) = rH(scale) ./ 100;
         % Now convert back to percent
@@ -607,6 +612,7 @@ for i=1:numel( headertext );
             strcmp('AirTC_6p85_Avg', headertext{i})==1| ...
             strcmp('AirTC_24_Avg', headertext{i})==1
         air_temp_hmp = data(:,i);
+        %sprintf('Tair is %s',char(data_orig.Properties.VariableNames(i)))
     elseif strcmp('Tsoil',headertext{i}) == 1 || ...
             strcmp('Tsoil_avg',headertext{i}) == 1 || ...
             strcmp('soilT_Avg(1)',headertext{i}) == 1
@@ -707,6 +713,24 @@ if sitecode == 10
     rH = thmp_and_h2ohmp_2_rhhmp( air_temp_hmp, h2o_hmp ) ./ 100.0;
 end
 
+% Correct and AverageMCon_Ss New MCon relative humidity. Funky sensors in beginning of
+% year
+
+if sitecode == 13 & year_arg == 2016
+    re = '(RH)\w+';  % Regular expression to extract RH variables at all heights
+    RH_vars = regexp( data_orig.Properties.VariableNames, re,'match');
+    RH_vars = [ RH_vars{ : } ]; % unnest variable names
+    RH_table = [data_orig(:,RH_vars(:))];
+    %Find the timestamp and add it to the RH table
+    ts_idx = strfind(data_orig.Properties.VariableNames,'timestamp');
+    ts_table = data_orig(:,find(not(cellfun('isempty', ts_idx))));
+    
+    % Average RH according to working probes during certain time periods.
+    % This includes scaling to keep this consistent with how RH is handled
+    % above.
+    RH_table = [ts_table, RH_table];
+        rH = UNM_RBD_calc_rhprofile_mean( RH_table ) ;
+end
 % Calculate VPD in millibars (hPa) using Teten's equation - GEM 5/2015
 % see here:
 % https://en.wikipedia.org/wiki/Clausius-Clapeyron_relation#Meteorology_and_climatology
@@ -909,10 +933,21 @@ elseif sitecode == 11 & year_arg==2014;
 elseif sitecode == 4 & year_arg==2013;
     CNR1TempK = CNR1TK;
     idx = DOYidx( 240.53 ):DOYidx( 282.53 );
-    CNR1TempK( idx ) = air_temp_hmp( idx ) + 273.15;  
+    CNR1TempK( idx ) = air_temp_hmp( idx ) + 273.15;
+elseif sitecode == 13 & year_arg ==2016
+% CNR1 was wired incorrectly until 10 Feb 2016. HMP was also bad at this
+% time. Use sonic air temp.
+    CNR1TempK = CNR1TK ; 
+    idx = 1:1941;
+    CNR1TempK( idx ) = Tair_TOA5( idx ) + 273.15;
 else
     CNR1TempK = CNR1TK;
 end
+figure(); ax(1) = subplot(2,1,1);
+plot(data_orig.timestamp,...
+    [ sw_incoming, sw_outgoing, lw_incoming, lw_outgoing],'.' );
+
+legend('SW_i','SW_o','LW_i','LW_o')
 
 [ sw_incoming, sw_outgoing, ...
     lw_incoming, lw_outgoing, Par_Avg ] = ...
@@ -928,6 +963,12 @@ end
     wnd_spd, ...
     CNR1TempK );
 
+ax(2) = subplot(2,1,2);
+plot(data_orig.timestamp,...
+    [ sw_incoming, sw_outgoing, lw_incoming, lw_outgoing], '.' );
+legend('SW_i','SW_o','LW_i','LW_o')
+linkaxes(ax,'x')
+dynamicDateTicks(ax,'linked')
 % These next 2 removals were formerly in 
 % UNM_RBD_apply_radiation_calibration_factors 
 

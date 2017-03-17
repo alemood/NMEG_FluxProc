@@ -1,4 +1,4 @@
-function [success, toa5_fname] = thirty_min_2_TOA5(site, raw_data_dir)
+function [success, toa5_fname] = thirty_min_2_TOA5(site, raw_data_dir, varargin)
 % THIRTY_MIN_2_TOA5 - convert a thirty minute datalogger file (*.flux.dat) to a
 % TOA5 file in the appropriate directory.
 %
@@ -22,17 +22,36 @@ function [success, toa5_fname] = thirty_min_2_TOA5(site, raw_data_dir)
 %
 % (c) Timothy W. Hilton, UNM, Oct 2012
 % Rewritten by Gregory E. Maurer, UNM, March 2015
+args = inputParser
+args.addRequired( 'site', @(x) ( isintval( x ) | isa( x, 'UNM_sites' ) ) );
+args.addRequired( 'raw_data_dir' , @ischar )
+args.addParameter( 'logger_name' , 'flux' , @ischar )
 
+args.parse( site , raw_data_dir, varargin{ : } );
+site = args.Results.site;
+raw_data_dir = args.Results.raw_data_dir;
+logger_name = args.Results.logger_name;
 
 site = UNM_sites( site );
 
 success = true;
 
-thirty_min_file = dir(fullfile(raw_data_dir, '*.flux.dat'));
-ts_data_file = dir(fullfile(raw_data_dir, '*.ts_data*'));
+if strcmpi( logger_name, 'flux' )
+    thirty_min_file = dir(fullfile(raw_data_dir, '*.flux.dat'));
+    ts_data_file = dir(fullfile(raw_data_dir, '*.ts_data*'));
+    % Directory to put new TOA5 files in
+    toa5_data_dir = fullfile(get_site_directory( site ), 'toa5');
+else
+    thirty_min_file = dir( fullfile( raw_data_dir , '*.dat'));
+    % Still need this to pass t
+    ts_data_file = dir(fullfile(raw_data_dir, '*.ts_data*'));
+    % Directory to put new TOA5 files in
+    toa5_data_dir = fullfile(get_site_directory( site ),...
+                                'secondary_loggers',...
+                                logger_name); 
+end
 
-% Directory to put new TOA5 files in
-toa5_data_dir = fullfile(get_site_directory( site ), 'toa5');
+
 
 if isempty(thirty_min_file)
     error('There is no thirty-minute data file in the given directory');
@@ -54,7 +73,7 @@ else
         card_convert_exe, ...
         toa5_ccf_file);
     
-    if not( isempty( ts_data_file ) )
+    if not( isempty( ts_data_file ) ) & strcmpi( logger_name, 'flux')
         % card convert will try to apply the ccf file to every .dat file in
         % the directory.  We want to use a different ccf file for the TS
         % data, so temporarily change the .dat extension so CardConvert will

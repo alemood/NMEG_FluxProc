@@ -1,0 +1,99 @@
+cdp = card_data_processor( UNM_sites.PJ,'data_10hz_already_processed',true)
+sitecode = cdp.sitecode   %PJC=UNM_sites.PJ    PJG=UNM_sites.PJ_girdle
+year_arg= 2010
+site = char( sitecode );
+draw_plots = 1;
+
+%% run the correct block depending on if its PJ or PJ_girdle (line 152 in this case)
+%%PJC
+
+	ustar_lim = 0.16;
+        n_SDs_filter_hi = 3.0; % how many std devs above the mean NEE to allow
+        n_SDs_filter_lo = 3.0; % how many std devs below the mean NEE to allow
+        wind_min = 15; wind_max = 75; % these are given a sonic_orient = 225;
+        co2_min_by_month = -10;
+        co2_max_by_month = 6;
+        Tdry_min = 240; Tdry_max = 310;
+        HS_min = -100; HS_max = 640;
+        HSmass_min = -100; HSmass_max = 640;
+        LH_min = -150; LH_max = 450;
+        rH_min = 0; rH_max = 1;
+        h2o_max = 30; h2o_min = 0;
+        press_min = 70; press_max = 130;
+        co2_max_by_month = [ 2, 2, 2, 2.5, 3, 3, 3, repmat( 6, 1, 5 ) ];
+
+%%PJG
+
+    %    ustar_lim = 0.16;
+    %    n_SDs_filter_hi = 3.0; % how many std devs above the mean NEE to allow
+    %    n_SDs_filter_lo = 3.0; % how many std devs below the mean NEE to allow
+    %    wind_min = 15; wind_max = 75; % these are given a sonic_orient = 225;
+    %    Tdry_min = 240; Tdry_max = 310;
+    %    HS_min = -100; HS_max = 640;
+    %    HSmass_min = -100; HSmass_max = 640;
+    %    LH_min = -150; LH_max = 450;
+    %    rH_min = 0; rH_max = 1;
+    %    h2o_max = 30; h2o_min = 0;
+    %    press_min = 70; press_max = 130;
+    %    co2_min_by_month = -10;
+    %    co2_max_by_month = [ 1, 1.5, 2, 2, 2, 2, 2, repmat( 6, 1, 5 ) ];
+
+%%
+    data = UNM_parse_fluxall_txt_file( sitecode, year_arg );
+% Hack to deal with funky fluxall files that have 
+    %data = data(data.year==year_arg, :);
+
+    headertext = data.Properties.VarNames;
+    timestamp = data.timestamp;
+    [year,month,day,hour,minute,second] = datevec( data.timestamp );
+    ncol = size( data, 2 );
+    filelength_n = size( data, 1 );
+
+%% as an example for PJ 2011:
+            
+             soil_data = preprocess_PJ_soil_data_DK1(UNM_sites.PJ, year_arg);    %for PJC
+            % soil_data = preprocess_PJ_soil_data_DK1(UNM_sites.PJ_girdle, year_arg);          %for PJG
+
+%% This is where you probably should directly modify the matlab variable (in this
+%% case soil_data) to replace the bad sapflow with the good
+
+% sap_data_corrected = UNM_parse_sapflow_txt_file( sitecode, year_arg)
+% 
+% clip out year data and concatenate into soil_data
+
+%% concatenate the 23x data with the dataset that was generated when we read in the 
+%% fluxall file in remove bad data
+data_complete = cat(2,data,soil_data);
+
+    data_complete_cor = ...
+        replacedata( data_complete, ...
+            UNM_fix_datalogger_timestamps( sitecode, ...
+                                           year_arg, ...
+                                           double( data_complete ),...
+                                           headertext,...
+                                           timestamp, 'debug',false));
+
+sitename = UNM_sites.PJ_girdle; 
+sitename = get_site_name( sitecode );
+
+%% Generates the file name to save the new corrected and compiled dataset to
+%% note here that you MUST CHANGE THE YEAR in the function call (here its 2011)
+%% otherwise it might overwrite and old file.
+
+    fname_complete = fullfile( getenv( 'FLUXROOT' ), ...
+                               'SiteData', ...
+                               sitename, ...
+                               'soil', ...
+                               sprintf( '%s_%d_corrected_tstamps_23x_fluxall.dat', ...
+                                        sitename, ...
+                                        year_arg ) );
+
+%% This actually saves the file. Should find it in the \sitename\soil folder
+
+write_table_std( fname_complete, data_complete_cor )
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Data must be in the following folders
+% FLUXALL FILES GO INTO : $FLUXROOT\SiteData\SITE\ ...
+% WIRELESS / 23X DATA GO INTO: $FLUXROOT\SiteData\PJ\soil ...

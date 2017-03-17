@@ -51,6 +51,7 @@ classdef UNM_Ameriflux_daily_aggregator
         sitecode;
         years;
         aflx_data;
+        soil_data;
         daily_data;
         
     end
@@ -67,6 +68,7 @@ classdef UNM_Ameriflux_daily_aggregator
             args.addRequired( 'sitecode', ...
                 @(x) ( isnumeric(x) | isa( x, 'UNM_sites' ) ) );
             args.addOptional( 'years', NaN, @isnumeric );
+            args.addOptional( 'soil',false,@islogical );
             args.parse( sitecode, varargin{ : } );
             % make sure sitecode is a UNM_sites object
             obj.sitecode = UNM_sites( args.Results.sitecode );
@@ -78,10 +80,17 @@ classdef UNM_Ameriflux_daily_aggregator
                 obj.years = 2007:this_year;
             end
             
+            if ~soil
             obj.aflx_data = ...
                 assemble_multiyear_ameriflux( args.Results.sitecode, ...
                 obj.years, ...
                 'suffix', 'gapfilled' );
+            elseif soil
+            obj.soil_data = ...
+                assemble_multiyear_ameriflux(args.Results.sitecode,...
+                obj.years,...
+                'suffix','soil')
+            end
             
             % no data from the future :)
             future_idx = obj.aflx_data.timestamp > now();
@@ -93,7 +102,42 @@ classdef UNM_Ameriflux_daily_aggregator
         end
         
         % --------------------------------------------------
+        function obj = aggregate_daily_soil( obj )
+        % If there are temp corrected probes, throw everything else out    
+           uncor_idx = find( cellfun( @isempty, ...
+               regexp( obj.soil_data.Properties.VariableNames, '_tcor|NIGHT|YEAR|DOY|timestamp|HRMIN|DTIME' )));
+            if ~isempty( uncor_idx )
+                obj.soil_data(:,uncor_idx) = [];
+            end                
+            % get shallow columns for averaging         
+            [vars_shallow, ~] = regexp_header_vars( t, ...
+                'SWC_\w*[OJPG][1-9]_[1-5][^1-9]' );
+            
+            % get mid depth columns (6-22 cm)
+            [vars_mid, ~] = regexp_header_vars( t, ...
+                'SWC_\w*[OJPG][1-9]_([6-9]|1[0-9]|2[0-2])' )
+            
+            % get deep columns (23 + cm)
+            [vars_deep, ~] = regexp_header_vars( t,...
+                'SWC_\w*[OJPG][1-9]_(2[3-9]|3[0-9]|4[0-9]|5[0-9]|6[0-9])' )
+            
+            vars_mean = { 'USTAR', 'WS', 'PA', 'CO2', 'VPD_F', 'H2O',...
+                'TA_F', 'RH_F' };
+            
+            t_daynight = double( [ obj.soil_data.YEAR, obj.soil_data.NIGHT ] );
+            
+            
+            t_30min = double( [ obj.soil_data.YEAR, obj.soil_data.DOY ] );
+            units_time = { '-', '-' };
+            
+            % Aggregate the data using the "consolidator" function from the
+            % MATLAB file exchange (John D'Errico)
+            [ t, data_mean ]  = ...
+                consolidator( t_30min, obj.soil_data{ :, vars_mean }, ...
+                @nanmean );
+        end
         
+        % --------------------------------------------------
         function obj = aggregate_daily( obj )
             % AGGREGATE_DAILY 
             

@@ -29,10 +29,19 @@ args.parse( fname, varargin{ : } );
 fname = args.Results.fname;
 version = args.Results.version;
 
-if strcmp(version,'in_house')
-    headerlines = 6;
-else
-    headerlines = 0;
+% if strcmp(version,'in_house')
+%     headerlines = 6;
+% else
+%     headerlines = 0;
+% end
+
+switch version
+    case 'in_house' 
+        headerlines = 6;
+    case 'daily'
+        headerlines = 6;
+    case 'aflx'
+        headerlines = 0;
 end
 
 delim = detect_delimiter( fname );
@@ -65,4 +74,3 @@ amflux_tab = array2table( data, 'VariableNames', var_names );
 if strcmp( version , 'in_house' )
 amflux_tab.Properties.VariableUnits =  var_units;
 end
-

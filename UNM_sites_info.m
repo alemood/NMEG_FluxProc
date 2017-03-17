@@ -65,7 +65,7 @@ methods
     function obj = UNM_sites_info( this_site )
     % UNM_SITES_INFO - class constructor
     %   
-    
+    warning('FIXME - Trying to deprecate this code (UNM_sites_info.m) \n Replace with parse_yaml_config')
     if isnumeric( this_site )
         this_site = UNM_sites( this_site );
     elseif ischar( this_site )
@@ -188,6 +188,15 @@ methods
         obj.latitude = 34.437; 
         obj.longitude = -106.238;
         obj.elevation = 2195;
+        
+    elseif this_site == UNM_sites.MCon_SS
+        obj.short_name = 'MCon_SS';                            
+        obj.long_name = 'Mixed Conifer Sulfur Springs';
+        obj.ameriflux = 'US-Vcs';
+        obj.ORNL = '';                            
+        obj.latitude = 35.919 ; 
+        obj.longitude = -106.614216;
+        obj.elevation = 2752;
         
     end % if/then/else
     end % constructor

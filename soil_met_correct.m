@@ -42,7 +42,6 @@ end
 if isequal( height( qc_T ) , height( fluxall_T ) )
 %re_par = '([Pp][Aa][Rr]_)(faceup|face_up)(\w+)';
 %par_idx = find( ~cellfun( @isempty, regexp( fluxall_T.Properties.VariableNames, re_par )));
-
  night_flag =  zeros( height( qc_T ) , 1 );
  night_flag( find( isnan( qc_T.Par_Avg ) ) ) = NaN;
  night_flag( find(  qc_T.Par_Avg  < 20 ) ) = 1;
@@ -93,7 +92,8 @@ end
 switch sitecode
     % sites with cs616s
     case { UNM_sites.GLand, UNM_sites.SLand, UNM_sites.JSav, ...
-            UNM_sites.New_GLand, UNM_sites.MCon, UNM_sites.PPine }
+            UNM_sites.New_GLand, UNM_sites.MCon, UNM_sites.MCon_SS,...
+            UNM_sites.PPine }
         
         % If CS616s are present we need to convert period to VWC and 
         % temperature correct them. Make arrays of matched SoilT and SWC 
@@ -242,7 +242,7 @@ if ~isempty( T_soil_rbd )
     % First set up filter - PJ sites need more filtering
     if sitecode==UNM_sites.PJ || sitecode==UNM_sites.PJ_girdle ...
             || sitecode==UNM_sites.TestSite
-        sd_filter_windows = [ 1, 1, 1, 1, 1, 1 ];
+        sd_filter_windows = [ 14, 14, 14, 14, 14 , 14 ];
     else
         sd_filter_windows = [ 1, 1, 1 ];
     end
@@ -292,7 +292,6 @@ if ~isempty( T_soil_rbd )
         T_soil_rbd( :, colname ) = filt_col;
   end
      set(0,'DefaultFigureVisible','on');
-    
 end % if ~empty
 
 %============ Individual site bad data removal ============

@@ -72,9 +72,22 @@ end
 % Parse the QC file
 qc_tbl = parse_fluxall_qc_file( sitecode, year );
 
-% Parse gapfilled and partitioned fluxes from online MPI eddyproc tool
-[ pt_MR_tbl, pt_GL_tbl ] = ...
-    UNM_parse_mpi_eddyproc_output( sitecode, year );
+% Parse gapfilled and partitioned fluxes from online MPI eddyproc tool.
+% Starting at the end of 2016, MPIs tool changed output format. Everything
+% is one table.
+if strcmp( args.Results.gf_part_source, 'old_eddyproc' )
+    warning('MPI Eddyproc outputs changed in August 2016')
+    fprintf('Make sure you are using the correct partitioned file\n')
+    
+
+[  pt_GL_tbl , pt_MR_tbl ] = ...
+    UNM_parse_mpi_eddyproc_output( sitecode, year ,'mpi_old');
+
+
+elseif strcmp( args.Results.gf_part_source, 'eddyproc') 
+[ pt_MRGL_tbl ] = ...
+    UNM_parse_mpi_eddyproc_output( sitecode, year , 'mpi_current');
+end
 
 % Parse gapfilled fluxes from Reddyproc tool
 try
@@ -106,6 +119,20 @@ fprintf( 'synchronizing timestamps... ');
 t0 = now(); % record running time
 
 % Max/min times in all tables' timestamps
+if strcmp( args.Results.gf_part_source, 'eddyproc') 
+    
+t_min = min( [ qc_tbl.timestamp; data.timestamp; ...
+               pt_MRGL_tbl.timestamp ] );
+t_max = max( [ qc_tbl.timestamp; data.timestamp; ...
+               pt_MRGL_tbl.timestamp ] ); 
+           
+[ qc_tbl, data ] = merge_tables_by_datenum( qc_tbl, data, ...
+    'timestamp', 'timestamp', 3, t_min, t_max );
+
+[ pt_MRGL_tbl, data ] = merge_tables_by_datenum( pt_MRGL_tbl, data, ...
+    'timestamp', 'timestamp', 3, t_min, t_max );
+           
+elseif strcmp( args.Results.gf_part_source, 'old_eddyproc') 
 t_min = min( [ qc_tbl.timestamp; data.timestamp; ...
                pt_GL_tbl.timestamp; pt_MR_tbl.timestamp ] );
 t_max = max( [ qc_tbl.timestamp; data.timestamp; ...
@@ -119,6 +146,7 @@ t_max = max( [ qc_tbl.timestamp; data.timestamp; ...
 
 [ pt_MR_tbl, data ] = merge_tables_by_datenum( pt_MR_tbl, data, ...
     'timestamp', 'timestamp', 3, t_min, t_max );
+end
 
 if strcmpi(args.Results.gf_part_source, 'Reddyproc')
     [ pt_MR_tbl_R, data ] = merge_tables_by_datenum( pt_MR_tbl_R, data, ...
@@ -134,10 +162,16 @@ data = table_fill_timestamps( data, 'timestamp', ...
     't_min', Jan1, 't_max', Dec31 );
 qc_tbl = table_fill_timestamps( qc_tbl, 'timestamp', ...
     't_min', Jan1, 't_max', Dec31 );
-pt_GL_tbl = table_fill_timestamps( pt_GL_tbl, 'timestamp', ...
-    't_min', Jan1, 't_max', Dec31 );
-pt_MR_tbl = table_fill_timestamps( pt_MR_tbl, 'timestamp', ...
-    't_min', Jan1, 't_max', Dec31 );
+switch  args.Results.gf_part_source;
+    case 'eddyproc'
+        pt_MRGL_tbl = table_fill_timestamps( pt_MRGL_tbl, 'timestamp', ...
+            't_min', Jan1, 't_max', Dec31 );
+    case 'old_eddyproc'
+        pt_GL_tbl = table_fill_timestamps( pt_GL_tbl, 'timestamp', ...
+            't_min', Jan1, 't_max', Dec31 );
+        pt_MR_tbl = table_fill_timestamps( pt_MR_tbl, 'timestamp', ...
+            't_min', Jan1, 't_max', Dec31 );
+end
 
 if strcmpi(args.Results.gf_part_source, 'Reddyproc')
     pt_MR_tbl_R = table_fill_timestamps( pt_MR_tbl_R, 'timestamp', ...
@@ -147,6 +181,12 @@ end
 % Merge gapfilling/partitioning output into one table so we don't have
 % to worry about which variables are in which table
 if strcmp( args.Results.gf_part_source, 'eddyproc' )
+    pt_tbl = pt_MRGL_tbl;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Amend periods where gapfilling fails or is ridiculous
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    pt_tbl = amend_gapfilling_and_partitioning( sitecode, year, pt_tbl );
+elseif strcmp( args.Results.gf_part_source, 'old_eddyproc' )
     cols = setdiff( pt_MR_tbl.Properties.VariableNames, ...
         pt_GL_tbl.Properties.VariableNames );
     pt_tbl = [ pt_GL_tbl, pt_MR_tbl( :, cols ) ];
@@ -204,7 +244,7 @@ keenan = false;
 
 % create the variables to be written to the output files
 [ amflux_gaps, amflux_gf ] = ...
-    prepare_AF_output_data( sitecode, qc_tbl, pt_tbl, soil_tbl, keenan );
+    prepare_AF_output_data( sitecode, qc_tbl, pt_tbl, soil_tbl, keenan, version );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % make a diagnostic plot of partitioning outputs.
@@ -240,17 +280,56 @@ end
 
 % Note that sometimes we don't want to export all the GPP/RECO columns
 % Select what we want and remove the ones we don't want...
-if sitecode==UNM_sites.MCon || sitecode==UNM_sites.PPine
+if sitecode==UNM_sites.MCon || ...
+        sitecode==UNM_sites.PPine || ...
+        sitecode==UNM_sites.MCon_SS
+    if strcmpi(version , 'in_house')
     amflux_gf.GPP = amflux_gf.GPP_MR2005_ecb;
     amflux_gf.RECO = amflux_gf.RECO_MR2005_ecb;
     amflux_gaps.GPP = amflux_gaps.GPP_MR2005_ecb;
-    amflux_gaps.RECO = amflux_gaps.RECO_MR2005_ecb;
-    
-else
+    amflux_gaps.RECO = amflux_gaps.RECO_MR2005_ecb;   
+    else 
+    amflux_gf.GPP_PI = amflux_gf.GPP_MR2005_ecb;
+    amflux_gf.RECO_PI = amflux_gf.RECO_MR2005_ecb;
+    amflux_gaps.GPP_PI = amflux_gaps.GPP_MR2005_ecb;
+    amflux_gaps.RECO_PI = amflux_gaps.RECO_MR2005_ecb;
+    end
+elseif (sitecode==UNM_sites.GLand ||...
+    sitecode==UNM_sites.SLand ||...
+    sitecode==UNM_sites.New_GLand ||...
+    sitecode==UNM_sites.PJ ||...
+    sitecode==UNM_sites.PJ_girdle ||...
+    sitecode==UNM_sites.JSav) & year == 2016
+
+   % The lasslop partioner has been down since 31 Aug 2016. To fill in the
+   % gaps, let's just use Reichstein partioning from Reddyproc :(
+   % We can delete this whole elseif statement when this is resolved.
+    warning('While the Lasslop partioner is down @ end of 2016, use Reichstein for low elevation sites')
+    glidx_start = 1;
+    glidx_end = DOYidx(244);
+    mridx_start = DOYidx(244.0208);
+    % FILL WITH LASSLOP PARTITION TABLES
     amflux_gf.GPP = amflux_gf.GPP_GL2010_amended_ecb;
     amflux_gf.RECO = amflux_gf.RECO_GL2010_amended_ecb;
     amflux_gaps.GPP = amflux_gaps.GPP_GL2010_amended_ecb;
     amflux_gaps.RECO = amflux_gaps.RECO_GL2010_amended_ecb;
+    % FILL WITH REICHSTEIN PARTITION TABLES
+    amflux_gf.GPP(mridx_start:end,:) = amflux_gf.GPP_MR2005_ecb(mridx_start:end,:);
+    amflux_gf.RECO(mridx_start:end,:) = amflux_gf.RECO_MR2005_ecb(mridx_start:end,:);
+    amflux_gaps.GPP(mridx_start:end,:) = amflux_gaps.GPP_MR2005_ecb(mridx_start:end,:);
+    amflux_gaps.RECO(mridx_start:end,:) = amflux_gaps.RECO_MR2005_ecb(mridx_start:end,:);      
+else
+    if strcmpi(version, 'in_house')
+    amflux_gf.GPP = amflux_gf.GPP_GL2010_amended_ecb;
+    amflux_gf.RECO = amflux_gf.RECO_GL2010_amended_ecb;
+    amflux_gaps.GPP = amflux_gaps.GPP_GL2010_amended_ecb;
+    amflux_gaps.RECO = amflux_gaps.RECO_GL2010_amended_ecb;
+    else
+    amflux_gf.GPP_PI = amflux_gf.GPP_GL2010_amended_ecb;
+    amflux_gf.RECO_PI = amflux_gf.RECO_GL2010_amended_ecb;
+    amflux_gaps.GPP_PI = amflux_gaps.GPP_GL2010_amended_ecb;
+    amflux_gaps.RECO_PI = amflux_gaps.RECO_GL2010_amended_ecb;
+    end
     
 end
 
@@ -272,8 +351,9 @@ amflux_gaps( :, {'GPP_F_MR2005','RECO_MR2005','GPP_GL2010','RECO_GL2010', ...
     'NEE_GL2010_amended_ecb'}) = [];
 
 if strcmp( version , 'fluxnet' )
-    amflux_gf ( : , {'GPP' , 'RECO' }) = [];
-    amflux_gaps ( : , {'GPP' , 'RECO' }) = [];
+    amflux_gf ( : , {'GPP_PI' , 'RECO_PI' }) = [];
+    amflux_gaps ( : , {'GPP_PI' , 'RECO_PI' }) = [];
+    amflux_gaps ( : , {'SUN_FLAG'} ) =  [] ;
 end    
 
 if args.Results.write_files

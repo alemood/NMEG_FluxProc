@@ -211,10 +211,11 @@ switch sitecode
                 %    shift_data( data( postResetIdx, : ), 0.5, allCols );
             %case { 2013, 2014, 2015, 2016 }
             %    data = shift_data( data, 0.5, allCols );
-            case 2016
-                % Stephen Chan (AMP Tech Team) pointed out a shift in 30
-                % minute data
-                data = shift_data( data , 0.5 );
+             case 2016
+                 warning('Shifts in 2016 data pointed out by S. Chan not being resolved');
+%                 % Stephen Chan (AMP Tech Team) pointed out a shift in 30
+%                 % minute data
+%                 data = shift_data( data , 0.5 );
         end
     %case UNM_sites.PJ_girdle
     %    switch year

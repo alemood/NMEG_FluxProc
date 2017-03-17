@@ -32,7 +32,7 @@ if year < 2011
     metTable = readtable( fname, 'Delimiter', ',' );
 elseif year > 2010
     fname = fullfile( getenv( 'FLUXROOT' ), 'Ancillary_met_data', ...
-        'sev1_meteorology_2011-2015.txt' );
+        'sev1_meteorology_2011-2016.txt' );
     metTable = readtable( fname, 'Delimiter', ',' );
 end
 

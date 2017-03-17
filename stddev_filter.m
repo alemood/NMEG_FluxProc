@@ -38,7 +38,7 @@ for i=1:length( filter_windows );
     window = filter_windows( i );
     
     % Slightly increase the std deviation threshold each round
-    if i > 1
+    if i > 1 
         std_dev = std_dev + .15;
     end
     

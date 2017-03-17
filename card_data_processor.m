@@ -307,7 +307,11 @@ methods
                         warning( 'No external data for this site' );
                     end
             end
-            % Put in table array
+            % Put in table array. If table is total precip, process into
+            % 30min intervals.
+            if strcmpi( conf.name,'precip')
+                i_data = total_precip_calculator ( i_data );
+            end                
             table_array{ i } = i_data;
         end
         % Loop through each table in table_array and merge into
@@ -365,7 +369,9 @@ methods
             if isempty(all_data.date)
                 all_data.date = datestr(all_data.timestamp,'mmddyy');
             end
+            if ~isnumeric(all_data.date)
             all_data.date = str2num( all_data.date );
+            end
             % This data is always missing the last 30 minute period in the
             % year (only goes to Dec 31, 23:30)
             all_data = all_data( all_data.timestamp <= obj.date_end, : );
@@ -725,7 +731,9 @@ methods
     % --------------------------------------------------
 
     function compare_fluxproc( obj )
-        
+        % Use plot_bivariate_comparison to make 5-panel figures of EddyPro
+        % and NMEG processing results at fluxall level
+        warning( 'This method not yet implemented\n' );
     end   % compare_fluxproc
     
     % --------------------------------------------------

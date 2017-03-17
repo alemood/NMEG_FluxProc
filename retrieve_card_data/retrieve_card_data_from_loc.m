@@ -32,9 +32,21 @@ result = 1;
 tower_files = dir( fullfile( data_loc, '*.dat' ) );
 
 % Error if data_loc is empty
-if isempty( tower_files )
+if isempty( tower_files ) & ~strcmp(logger_name,'soilflux')
     msg = sprintf( 'no data files found in %s', data_loc );
     error( msg );
+elseif strcmp(logger_name,'soilflux')
+    switch site
+        case 4
+            this_site = 'PJ_CONTROL_LI8100';
+        case 10
+            this_site = 'PJ_GIRDLE_8100';
+    end
+    tower_files = dir( ...
+        fullfile( data_loc , strcat( this_site ), '*.*x' ) );
+    temp_name = ...
+        cellfun( @(x) fullfile(this_site,x ), {tower_files.name}, 'UniformOutput', false );
+    [tower_files(1).name tower_files(2).name] = deal(temp_name{1},temp_name{2});
 end
 
 fprintf(1, 'processing tower data files: ');

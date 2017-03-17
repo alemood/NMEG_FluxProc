@@ -23,13 +23,15 @@ for i = 1:length(sitelist);
         
         % Fix the resolution file if needed
         % generate_header_resolution_file;
-        
+       
+
+
         if process_10hz
             % Start and end dates for making a new fluxall file
-            date_start = datenum(year,1, 1, 0, 0, 0);
+            date_start = datenum(year, 1, 0, 0, 30, 0);
             % end at 23:30 when processing tob data (not quite sure why)
             % half hour later other times
-            date_end = datenum(year,8,16,10,0,0);
+            date_end = datenum(year, 12 , 31, 23 , 30, 0);
             
             % Create a new cdp object.
             % Leave 'data_10hz_already_processed' false.
@@ -50,8 +52,8 @@ for i = 1:length(sitelist);
         
         % Create a new cdp object using correct start dates and set
         % 'data_10hz_already_processed' to true.
-        date_start = datenum(year, 1, 0, 0, 0, 0);
-        date_end = datenum(year, 12,  31, 23, 30, 0);
+        date_start = datenum(year, 1, 1, 0, 30, 0);
+        date_end = datenum(year, 12,  31, 24, 0, 0);
         
         new = card_data_processor(sitecode, 'date_start', date_start,...
             'date_end', date_end, 'data_10hz_already_processed', true,...

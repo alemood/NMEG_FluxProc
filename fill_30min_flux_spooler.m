@@ -286,6 +286,15 @@ elseif sitecode == 5 % PPine
         output = fill_30min_flux_processor( output, 5,2013,15553, 15558);
         output = fill_30min_flux_processor( output, 5,2013,15598, 15611);
         output = fill_30min_flux_processor( output, 5,2013,15823, 15861);
+    elseif year == 2016
+        output = fill_30min_flux_processor( output, 5, 2016, DOYidx(1.02), DOYidx(1.33));
+        output = fill_30min_flux_processor( output, 5, 2016, DOYidx(1.75), DOYidx(2.35416));
+        output = fill_30min_flux_processor( output, 5, 2016, DOYidx(2.7917), DOYidx(3.3125));
+        output = fill_30min_flux_processor( output, 5, 2016, DOYidx(3.7708), DOYidx(4.3125));
+        output = fill_30min_flux_processor( output, 5, 2016, DOYidx(4.8125), DOYidx(5.3958));
+        output = fill_30min_flux_processor( output, 5, 2016, DOYidx(5.7916), DOYidx(6.3958));
+        output = fill_30min_flux_processor( output, 5, 2016, DOYidx(6.6042), DOYidx(9.4167));
+        output = fill_30min_flux_processor( output, 5, 2016, DOYidx(13.4792), DOYidx(21.5417));
     end
 
 elseif sitecode == 6 % MCon
@@ -369,7 +378,8 @@ elseif sitecode == 6 % MCon
         output = fill_30min_flux_processor( output, 6, 2015, 17415,17448);
     elseif year == 2016
         output = fill_30min_flux_processor( output, 6, 2016, DOYidx(94.44),DOYidx(95));
-        output = fill_30min_flux_processor( output, 6, 2016, DOYidx(179.22),DOYidx(182.84));      
+        output = fill_30min_flux_processor( output, 6, 2016, DOYidx(179.22),DOYidx(182.84)); 
+        output = fill_30min_flux_processor( output, 6, 2016, DOYidx( 306.5 ),DOYidx( 315.25 )); 
     end
 
 elseif sitecode == 7 % TX_savanna
@@ -531,6 +541,9 @@ if plot_diagnostic
     linkaxes( ax, 'x' );
     datetick( 'x', 'mmm-yy', 'keeplimits', 'keepticks' );
     ylabel( 'HSdry\_massman' );
+    
+    linkaxes( ax , 'x' )
+    dynamicDateTicks( ax , ' linked ' );
     
 end
 
