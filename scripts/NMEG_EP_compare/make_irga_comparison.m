@@ -1,51 +1,220 @@
-function h = make_irga_comparison( irga1 , irga2 )
-%make_fluxproc_comparison.m
+function [] = make_irga_comparison( sitecode, varargin )
+% MAKE_IRGA_COMPARISON - compares open and closed path irgas. 
+%
+% Two NMEG sites, SLand and MCon_SS, run open and closed path IRGAs
+% side-by-side. This code grapicially compares available datasets processed
+% in Eddypro. Must use the fluxall file to retrieve open path data and
+% specify the closed path data file
+%
+% SLand closed path starts 2015_06_17_0000
+% MCon_SS closed path starts 2015_12_03_0000
+% INPUTS
+%    sitecode: UNM_sites object (or corresponding integer)
+%    year: integer: four digit year
+%    date_start: serial datenum
+%    date_end: serial datenum
+%
+% OUTPUTS
+%    h: figure handle to comparison plots
+%
+% SEE ALSO
+%    
+%
+% author: Alex Moody, UNM, 2016
 
-[year,~,~,~,~,~]=datevec(min(irga1.timestamp));
-sitecode='SLand';
+[ this_year, ~, ~, ~, ~, ~ ] = datevec( now() );
+
+% check user arguments
+args = inputParser;
+args.addRequired( 'sitecode', ...
+    @(x) ( isintval( x ) | isa( x, 'UNM_sites' ) ) );
+args.addParameter( 'filterdata',false, @islogical ) 
+args.addParameter( 'showfig',true, @islogical ) 
+% args.addParameter( 'date_end', ...
+%     @(x) ( isnumeric( x ) & ( x >= 2006 ) & ( x <= this_year ) ) );
+% args.addRequired( 'suffix', ...
+%     @(x) any( strcmp( x, { 'with_gaps', 'gapfilled', 'soil' } ) ) ) ;
+% args.addOptional( 'version', ...
+%     '', @ischar);
+
+args.parse( sitecode, varargin{ : } );
 
 
-myvars = {'un_co2_flux' 'co2_flux',...
-    'un_H'        'H',...
+
+% Get start date based on site
+switch char(sitecode)
+    case 'SLand'
+        t_start = datenum([2015,12,16]);
+        [year_start,~,~,~,~,~] = datevec(t_start);
+    case 'MCon_SS'
+        t_start = datenum([2016,1,1]);
+        [year_start,~,~,~,~,~] = datevec(t_start);
+end
+t_end = floor(now - 60);
+[year_end,~,~,~,~,~] = datevec(t_end);
+fprintf('Comparing %s IRGAs from %s to %s.\n',char(sitecode),datestr(t_start),datestr(t_end));
+
+% Eddypro output variables
+myvars = {  'timestamp' 'daytime' 'H' 'LE'    'co2_flux'  'h2o_flux' ...
+    'co2_molar_density' 'co2_mole_fraction' 'co2_mixing_ratio'...
+    'h2o_molar_density' 'h2o_mole_fraction' 'h2o_mixing_ratio' ...
+    'un_H'    'un_LE'    'un_co2_flux'    'un_h2o_flux' ...
+    };
+ep_var = {'un_co2_flux' 'co2_flux',...
+    'un_H', 'H',...
     'un_LE' 'LE',...
     'un_h2o_flux' 'h2o_flux'};
-%Access variable names through any table T
-t_start = datenum([2016,1,1]);
-t_end = datenum([2016,7,18]);
+ep_var = {'H' 'LE'    'co2_flux'  'h2o_flux' ...
+    'co2_molar_density' 'co2_mole_fraction' 'co2_mixing_ratio'...
+    'h2o_molar_density' 'h2o_mole_fraction' 'h2o_mixing_ratio' ...
+    'un_H'    'un_LE'    'un_co2_flux'    'un_h2o_flux'};
 
-[irga1, irga2] = merge_tables_by_datenum(irga1,irga2,...
-        'timestamp','timestamp', ...
-        14.99,...
-        t_start, t_end);
-ts = irga2.timestamp;
+% Retrieve data. irga1 is open path, irga2 is closed path
+yearlist = year_start:year_end;
 
+T75 = table();
+for i = 1:length(yearlist)
+    fname75 = fullfile( getenv('FLUXROOT'), 'FluxOut/ep_data/', ...
+        sprintf( '%s_ep_%d.mat', ...
+        char( sitecode ), ...
+        yearlist(i) ) );
+    load(fname75);
+    T75 = vertcat(T75,all_data( : , myvars ));
+end
 
+fname72 = fullfile( getenv('FLUXROOT'), 'FluxOut/ep_data/', ...
+        sprintf( '%s_closedpath_ep.mat', ...
+        char( sitecode ) ) );
+load(fname72);
+T72 = irga2(:,myvars);
 
-for i=1:length(myvars)+4;
-    if i <= 8
-        varname = char(myvars(i));
-        h(i) = plot_compare( irga1{:,myvars(i)}, irga2{:,myvars(i)}, ts, varname, sitecode , year )
-    elseif i==9 %FCcorrected - FCraw
-        i1var = irga1{:,myvars(2)} - irga1{:,myvars(1)}; 
-        i2var = irga2{:,myvars(2)} - irga2{:,myvars(1)};
-        varname = 'FC corrected - FC raw';
-        h(i) = plot_compare( i1var, i2var, ts, varname,sitecode,year)
-    elseif i==10 %Hcorrected - Hraw
-        i1var = irga1{:,myvars(4)} - irga1{:,myvars(3)}; 
-        i2var = irga2{:,myvars(4)} - irga2{:,myvars(3)};
-        varname = 'H corrected - H raw ';
-        h(i) =plot_compare( i1var, i2var, ts, varname,sitecode,year)
-    elseif i==11 %LEcorrected - LEraw
-        i1var = irga1{:,myvars(6)} - irga1{:,myvars(5)}; 
-        i2var = irga2{:,myvars(6)} - irga2{:,myvars(5)};
-        varname = 'LE corrected - LE raw';
-        h(i) = plot_compare( i1var, i2var, ts, varname,sitecode,year)
-    elseif i==12 %h2o_cor - h2o_raw
-        i1var = irga1{:,myvars(8)} - irga1{:,myvars(7)}; 
-        i2var = irga2{:,myvars(8)} - irga2{:,myvars(7)};
-        varname = 'h2o corrected - h2o raw ';
-        h(i) = plot_compare( i1var, i2var, ts, varname,sitecode,year)
+T = outerjoin( T75, T72, 'Keys', 'timestamp','MergeKeys',true );
+
+% Discard data outside of requested time period
+discard_idx = ( ( T.timestamp < t_start ) | ...
+                ( T.timestamp > t_end ) ); 
+T( discard_idx, : ) = [];
+% Add correction magnitude columns
+T.FCcorrect_T72 = T{:,'un_co2_flux_T72'} - T{:,'co2_flux_T72'} ;
+T.FCcorrect_T75 = T{:,'un_co2_flux_T75'} - T{:,'co2_flux_T75'} ;
+T.daytime_T75 = [];
+ts = T.timestamp;
+
+% Elementary RBD 
+windowsize = 1 ;
+std_dev = 3.5;
+max_diff = 40;
+ignore_nans = true;
+debug_plots = false;
+
+if args.Results.filterdata
+    for i = 1:length(ep_var)
+        % Filter Open Path Variable
+        cvarname = strcat( ep_var{ i } , '_T72' );
+        cvar = T{:,cvarname};
+        [c_filtered, ~]  = filterseries( cvar , 'sigma' , 48*windowsize, ...
+            max_diff, ignore_nans, debug_plots);
+        [c_filtered, ~]  = filterseries( c_filtered , 'shift' , [], ...
+            max_diff, ignore_nans, debug_plots);
+        T{:,cvarname} = c_filtered;
+        % Filter closed path variable
+        ovarname = strcat( ep_var{ i } , '_T75' );
+        ovar = T{:,ovarname};
+        [o_filtered, ~]  = filterseries( ovar ,'sigma', 48*windowsize, ...
+            std_dev, ignore_nans, debug_plots);
+        [o_filtered, ~]  = filterseries( o_filtered , 'shift' , [], ...
+            max_diff, ignore_nans, debug_plots);
+        T{:,ovarname} = o_filtered;
     end
+end
+
+if args.Results.showfig
+type = 'irga';
+% For comparing open and closed path analyzers from eddypro processing
+ for i=1:length( ep_var )
+       closedvar = strcat( ep_var{ i } , '_T72' );
+       openvar = strcat( ep_var{ i } , '_T75' );
+       varname = char( ep_var{ i } ) ; 
+       plot_bivariate_comparison( T{:,openvar},T{:,closedvar},...
+                                  T.timestamp, type, ...
+                                  'fig_name', varname , ...
+                                  'sitecode' , char(sitecode) );
+        %------- Plot cumulative NEE 
+        if strcmpi( varname ,'co2_flux') 
+            T = eddypro_rbd( T, openvar );
+            T = eddypro_rbd( T, closedvar);            
+            NEEaxis = figure;
+            handles = compare_cumulative_series( NEEaxis, T ); 
+        end
+ end 
+ %------- Plot corrected/uncorrected FC  
+ plot_bivariate_comparison( T{:,'un_co2_flux_T72'},T{:,'co2_flux_T72'},...
+                            T.timestamp, type, ...
+                            'fig_name', 'Corrected vs Uncorrected FC, Closed' , ...
+                            'sitecode' , char(sitecode) );
+ plot_bivariate_comparison( T{:,'un_co2_flux_T75'},T{:,'co2_flux_T75'},...
+                            T.timestamp, type, ...
+                            'fig_name', 'Corrected vs Uncorrected FC, Open' , ...
+                            'sitecode' , char(sitecode) );
+end
+ 
+
+ % Calculate some basic stats
+ statT =  grpstats(T,{'daytime_T72'},{'min','max','mean'});
+ statT(:,1:5) = [];
+ % Do some reshaping to print table to txt file
+
+ statT =  table2array(statT);
+ nightstat = reshape(statT(1,(1:end)),3,30)';
+ daystat = reshape(statT(2,(1:end)),3,30)';
+ allstats = horzcat(nightstat,daystat);
+ Tprint =array2table(allstats);
+ Tprint.Properties.RowNames = T.Properties.VariableNames(3:end);
+ Tprint.Properties.VariableNames = ...
+     {'nightMin' 'nightMax' 'nightMean' 'dayMin' 'dayMax' 'dayMean'};
+ writetable(Tprint, ...
+     fullfile(getenv('FLUXROOT'),'QAQC_analyses',...
+        strcat(char(sitecode),'_irga_compare_stats.csv')),...
+     'Delimiter',',',...
+     'WriteRowNames',true );
+
+% ---------------
+% Subfunctions
+%---------------
+% Plot the cumulative series
+function handles = compare_cumulative_series( axis, tbl )
+
+        tbl_vars = {'co2_flux_T75' 'co2_flux_T72'};
+        sc = -1; % GPP has a negative sign convention
+            
+        plot( tbl.timestamp, ...
+            nan_cumsum( tbl.( tbl_vars{ 1 } )) * sc, '.k' );
+        hold on;
+        plot( tbl.timestamp, ...
+            nan_cumsum( tbl.( tbl_vars{ 2 } )) * sc, '.b' );
+        
+        ylabel(  'Cum. NEE (umol/m2/s)' );
+        datetick();
+        legend( 'Open Path' , 'Closed Path' );
+        handles = axis;
+end
+
+% Small function to cumsum over invalid values ( NaN )
+function nonan = nan_cumsum( arr )
+    nonan = arr;
+    nonan( find( isnan( nonan ) )) = 0;
+    nonan = cumsum( nonan );
+end
+
+function tbl = eddypro_rbd( tbl_in , var )
+%    bad_idx = (  tbl_in.(var) > prctile(tbl_in.(var), 99.8) & ...
+%                     tbl_in.(var) < prctile(tbl_in.(var), 0.1) );
+%    tbl_in{ bad_idx , var } = NaN ;
+   bad_idx = find((  tbl_in.(var) > 30  | ...
+                    tbl_in.(var) < -30 ));
+   tbl_in{ bad_idx , var } = NaN ;
+   tbl = tbl_in;
+end
 end
 %    savefig( h , fullfile( getenv('FLUXROOT'),'SiteData', ...
 %        sitecode,'fluxcompare_plots',num2str(year) ) )

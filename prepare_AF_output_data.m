@@ -127,11 +127,20 @@ amflx_gaps = add_cols( amflx_gaps, qc_tbl.sw_incoming, ...
 qc_tbl.NR_tot( Rg_flag ) = nan;
 
 % Precip
-% Gapfilled precip should be found in MPI files
+% Gapfilled precip should be found in MPI files pre 2016. The try/catch
+% statement will deal with 2016+ files, which have no precip (*MRGL*)
+try
 P_flag = verify_gapfilling( pt_tbl.Precip, qc_tbl.precip, 1e-4 );
 amflx_gf = add_cols( amflx_gf, pt_tbl.Precip, ... % P_F
     { 'P_F' }, { 'mm' }, P_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
+catch
+P_flag = NaN( height(pt_tbl) , 1 );
+amflx_gf = add_cols( amflx_gf, 	qc_tbl.precip, ... % P_F
+    { 'P_F' }, { 'mm' }, P_flag );
+amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
+end
+
 
 %%%% % % % % % % % %
 % FIXME: for now gapfilling of longwave occurs here
@@ -318,12 +327,18 @@ clear headers units;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Make a large table of partitioned values first
+try % Pre-2016 MPI online partitioner files
 part_mat = [ pt_tbl.GPP_f, pt_tbl.Reco, ...
              pt_tbl.GPP_HBLR, pt_tbl.Reco_HBLR, ...
              pt_tbl.Reco_HBLR_amended, pt_tbl.amended_flag ];
+catch % Post-2016 MPI online partitioner files
+    part_mat = [ pt_tbl.GPP_f, pt_tbl.Reco, ...
+             pt_tbl.GPP_DT, pt_tbl.Reco_DT, ...
+             pt_tbl.Reco_HBLR_amended, pt_tbl.amended_flag ];
+end
 headers =  {'GPP_F_MR2005', 'RECO_MR2005', ...
             'GPP_GL2010', 'RECO_GL2010', ...
-            'RECO_GL2010_amended', 'amended_FLAG' };
+            'RECO_GL2010_amended', 'amended_FLAG' };    
 units =    { 'mumol/m2/s', 'mumol/m2/s', ...
              'mumol/m2/s', 'mumol/m2/s', 'mumol/m2/s', '--' };
 

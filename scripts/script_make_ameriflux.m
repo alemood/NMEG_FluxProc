@@ -11,10 +11,10 @@
 partmethod = 'eddyproc' ;%; %'eddyproc'
 % Make daily files? All AF files should be in $FLUXROOT$/Ameriflux_files
 make_daily = false;
-write_files = false;
+write_files = true;
 process_soil = false;
-version ='in_house';  %'fluxnet'; %
-showfig = false;
+version = 'in_house';  %'in_house';  
+showfig = true;
 
 if ~showfig
     set(0,'DefaultFigureVisible','off');
@@ -42,7 +42,8 @@ end
             yearlist = 2016;
             partmethod = 'Reddyproc';
         case 5
-            sitelist = {UNM_sites.GLand};
+            sitelist = {UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle,...
+                UNM_sites.SLand, UNM_sites.GLand, UNM_sites.New_GLand};
             yearlist = 2016;
              
     end            
@@ -54,14 +55,22 @@ for i = 1:length(sitelist);
         sitecode = sitelist{i};
         year = yearlist(j);
         
-        if strcmp(partmethod, 'eddyproc');
+        if strcmp(partmethod, 'old_eddyproc');
         
             UNM_Ameriflux_File_Maker( sitecode, year, ...
                 'write_files', write_files, ...
                 'write_daily_file', make_daily, ...
                 'process_soil_data', process_soil,...
-                'version', version);
+                'version', version , ...
+                'gf_part_source', partmethod);
             
+        elseif strcmp( partmethod , 'eddyproc')
+              UNM_Ameriflux_File_Maker( sitecode, year, ...
+                'write_files', write_files, ...
+                'write_daily_file', make_daily, ...
+                'process_soil_data', process_soil,...
+                'version', version );
+                
         elseif strcmp(partmethod, 'Reddyproc');
             %error( ' not implemented yet ' );
             UNM_Ameriflux_File_Maker(sitecode, year,...

@@ -42,14 +42,13 @@ if irgacompare
         char( sitecode ), ...
         start_year ) );
     fname72 = fullfile( getenv('FLUXROOT'), 'FluxOut/ep_data/', ...
-        sprintf( '%s_closedpath_ep_%d.mat', ...
-        char( sitecode ), ...
-        start_year ) );
+        sprintf( '%s_closedpath_ep.mat', ...
+        char( sitecode ) ) );
     % ------------ Load files  ----------- 
     load( fname75 ); % Open Path
     T75 = all_data( : , myvars ); 
     load( fname72 ); % Closed Path
-    T72 = all_data( : , myvars );
+    T72 = irga2( : , myvars );
     
 
 

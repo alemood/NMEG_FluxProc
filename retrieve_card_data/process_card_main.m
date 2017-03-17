@@ -125,10 +125,15 @@ end
 
 % Get data files
 fprintf( 'validating files in %s\n', data_location );
-card_files = dir( fullfile( data_location, '*.dat' ) );
+% May be an 8100 card with folders
+if strcmpi(logger_name, 'soilflux')
+    card_files = dir( data_location ) ;
+else
+    card_files = dir( fullfile( data_location, '*.dat' ) );
+end
 
 % Error if data_loc is empty
-if isempty( card_files )
+if isempty( card_files ) & ~card_folders.isdir
     msg = sprintf( 'no data files found in %s', data_location );
     error( msg );
 end
@@ -278,6 +283,25 @@ if strcmp( logger_name, 'flux' )
     end
 end
 
+% If this is a secondary logger, convert the data
+if regexp(logger_name,'soil|precip|sap')
+     % convert the thirty-minute data to TOA5 file
+    try
+        fprintf(1, '\n----------\n');
+        fprintf(1, 'CONVERTING SECONDARY THIRTY-MINUTE DATA TO TOA5 FORMAT...\n');
+        [soilmet_convert_success, toa5_fname] = thirty_min_2_TOA5(...
+            this_site, raw_data_dir , 'logger_name' , logger_name);
+        fprintf(1, ' Done\n');
+    catch err
+        soilmet_convert_success = false;
+        % echo the error message
+        fprintf( 'Error converting 30-minute data to TOA5 file.' )
+        disp( getReport( err ) );
+        main_success = 0;
+    end
+% End secondary logger conversions    
+end
+
 %copy uncompressed TOB1 data to MyBook
 % try 
 %     fprintf(1, '\n----------\n');
@@ -336,7 +360,8 @@ try
     if args.Results.interactive
         fprintf(1, 'TRANSFERING COMPRESSED RAW DATA TO EDAC...\n');
         h = msgbox( 'click to begin FTP transfer', '' );
-        waitfor( h );
+        % Why wait?
+        %waitfor( h );
         transfer_2_edac(this_site, card_archive_name)
         fprintf(1, 'Done transferring.\n');
     else
@@ -426,6 +451,7 @@ if strcmp( logger_name, 'flux' )
 
 % End flux card data processing
 end
+
 
 % close the log file
 diary off

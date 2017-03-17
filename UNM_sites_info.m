@@ -189,6 +189,15 @@ methods
         obj.longitude = -106.238;
         obj.elevation = 2195;
         
+    elseif this_site == UNM_sites.MCon_SS
+        obj.short_name = 'MCon_SS';                            
+        obj.long_name = 'Mixed Conifer Sulfur Springs';
+        obj.ameriflux = 'US-Vcs';
+        obj.ORNL = '';                            
+        obj.latitude = 35.919 ; 
+        obj.longitude = -106.614216;
+        obj.elevation = 2752;
+        
     end % if/then/else
     end % constructor
 

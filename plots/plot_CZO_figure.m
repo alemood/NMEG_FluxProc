@@ -58,6 +58,7 @@ args.addRequired( 'years', ...
 args.addParamValue( 'ylims', NaN, @isnumeric );
 args.addParamValue( 'xlims', NaN, @isnumeric );
 args.addParamValue( 'binary_data', false, @islogical );
+args.addParamValue( 'aflx_path', '',@ischar );
 
 % parse optional inputs
 args.parse( sitecode, years, varargin{ : } );
@@ -73,7 +74,8 @@ end
 % load ameriflux data for requested years
 aflx_data = assemble_multiyear_ameriflux( args.Results.sitecode, ...
                                            args.Results.years, ...
-                                           'suffix', 'gapfilled');%, ...
+                                           'suffix', 'gapfilled',...
+                                           'path_to_aflx',args.Results.aflx_path);%, ...
                                            %'binary_data', args.Results.binary_data );
 
 if args.Results.sitecode == UNM_sites.PPine
@@ -142,16 +144,17 @@ agg = array2table( [ year_mon, agg_sums, T_mean, Rg_max ], 'VariableNames',...
             
 agg.timestamp = datenum( agg.year, agg.month, 1 );
 
-% Remove some time periods because they are gapfilled/not needed (for latest
-% figure sent to Jon Chorover)
-test = agg.timestamp < datenum( 2009, 10, 1 );
-agg( test, : ) = [];
-% Remove fire
-test = agg.timestamp > datenum( 2013, 4, 1 ) & agg.timestamp < datenum( 2013, 12, 1 );
-agg{ test, 3:end } = NaN;
-% Remove end of 2015
-test = agg.timestamp > datenum( 2015, 9, 1 );
-agg{ test, 3:end } = NaN;
+% COMMENTED OUT FEB 2017. WHO IS JON CHOROVER?
+% % Remove some time periods because they are gapfilled/not needed (for latest
+% % figure sent to Jon Chorover)
+% test = agg.timestamp < datenum( 2009, 10, 1 );
+% agg( test, : ) = [];
+% % Remove fire
+% test = agg.timestamp > datenum( 2013, 4, 1 ) & agg.timestamp < datenum( 2013, 12, 1 );
+% agg{ test, 3:end } = NaN;
+% % Remove end of 2015
+% test = agg.timestamp > datenum( 2015, 9, 1 );
+% agg{ test, 3:end } = NaN;
 
 %================
 % plot the figure
@@ -205,7 +208,11 @@ if not( isnan( args.Results.ylims ) )
     set( ax2, 'YLim', args.Results.ylims( 2, : ) );
 end
 ylabel( {'GPP & RE','[ gC m^{-2} ]'}, 'FontSize', 18 );
-legend( [ h_GPP, h_RE ], 'GPP', 'RE', 'Location', 'NorthEast' );
+%legend( [ h_GPP, h_RE ], 'GPP', 'RE', 'Location', 'NorthEast' );
+legend2 = legend([ h_GPP, h_RE ], 'GPP', 'RE' );
+set(legend2,...
+    'Position',[0.14 0.54 0.05 0.06]);
+
 
 pal = cbrewer( 'div', 'PRGn', 9 );
 set( h_GPP, 'FaceColor', pal( end, : ) );  %plot GPP in green
@@ -293,7 +300,10 @@ linkaxes( [ ax1, ax2, ax3L, ax3R, ax4L, ax4R ], 'x' );
 
 % set figure dimensions to US letter paper, landscape orientation
 set( hf, 'Units', 'Inches', ...
-         'Position', [ 0, 0, 11, 8.5 ] );
+         'Position', [ 0, 0, 18.6, 8.4] );
+     
+saveas( hf , fullfile(getenv('FLUXROOT'),'Plots','CZO_figures',...
+    strcat(char(sitecode),'_aggplot.png') ) ) ;
 
 %============================================================
 function [ redondo_monthly_pcp ] = get_redondo_monthly_pcp_2011_to_present()
