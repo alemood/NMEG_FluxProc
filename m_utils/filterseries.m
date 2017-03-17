@@ -47,21 +47,38 @@ if strcmp(type, 'mean')
     testDiff = abs(diff) > threshold;
     filteredSeries(testDiff) = nan;
 
-% MEDIAN - Filter by difference from the median
+% MEDIAN - Filter by difference from the median. 
+% Effective spike removal. Make window odd, and keep around 3-5 so that
+% rain events (in the case of SWC) are not screened out.
 % Use slidefun.m from MATLAB FEx to calculate median
+% MATLAB has a native function medfilt1.m that I'm substituting in
 elseif strcmp(type, 'median')
+    
     % First interpolate over the missing data in the input series
     series_filled = interpseries(series);
-    % Then calculate a running median based on the window size.
-    runningM = slidefun(@median, window, series_filled);
-    % Find difference from the mean
-    diff = series - runningM;
-    % Change datapoints more than the threshold value away from the 
-    % mean to nan
+    % Calculate running mean
+    medianSeries = medfilt1(series, window );
+    % Find difference from the median
+    diffSeries = abs(series_filled - medianSeries);
+    testDiff = diffSeries;
+    % For filtering isolated spikes, plot a histogram to determine this parameter 
+    spikes = diffSeries > 0.02;
+    % Initialize an array of the fixed signal
     filteredSeries = series;
-    testDiff = abs(diff) > threshold;
-    filteredSeries(testDiff) = nan;
+    % Replace data flagged as spikes with medianSeries
+    filteredSeries(spikes) = medianSeries(spikes);
     
+%     %--------------vvvvvv---old stuff
+%     % Then calculate a running median based on the window size.
+%     runningM = slidefun(@median, window, series_filled);
+%     % Find difference from the mean
+%     diff = series - runningM;
+%     % Change datapoints more than the threshold value away from the 
+%     % mean to nan
+%     filteredSeries = series;
+%     testDiff = abs(diff) > threshold;
+%     filteredSeries(testDiff) = nan;
+%     
 % SHIFT - Filter by difference from nearest +/- neighbors;
 % Warning - multiplies the NaN's in the original data
 elseif strcmp(type, 'shift')
@@ -124,11 +141,82 @@ elseif strcmp(type, 'hampel')
     % Hampel filter - parameters are default here, including a window size
     % that is based on the size of the input array, and a threshold value
     % of 3 (for removing outliers).
-    [filteredSeries,remove,~,~,~,~,~] = hampel(x, series);
+    [filteredSeries,remove,~,~] = hampel(series,23);
     filteredSeries(remove) = nan;
     
+% NOISY filter, so called. Implemented to attempt to screen out very noisy
+% periods and then just keep minimum values if there appears to be a
+% signal. This probably should be implemented first
+elseif strcmp( type, 'noisy' )
+    % Calculate vector of moving standard deviation
+    stdM = movstd( series, window ); 
+    % Find significant changes in the moving std
+    change_idx = findchangepts( stdM );%, 'MaxNumChanges',10 );
+    fprintf('Found %d significant change(s) in the moving std\n', ...
+        length(change_idx));
+    % Add the end 
+    change_idx = vertcat(change_idx, length( series ) );
+    % Subset the moving std and try to automate selection of noisey periods
+    % based on range of std
+    pointer = 1;
+    subsets ={};
+    for i = 1: length(change_idx) 
+        if i == length(change_idx) 
+            subsets{i} = stdM( pointer : end ); 
+        else
+            subsets{i} = stdM( pointer : change_idx( i ) - 1 );
+            pointer = change_idx(i) ;
+        end
+    end
+    % Determine the range of subsets
+    stdM_range = cellfun( @(x) range(x), subsets );
+    stdM_mean  = cellfun( @(x) mean(x), subsets );
+    
+    % Super weird and arbitrary selection of noisy areas. Heuristic as hell
+    nsy_idx = find( stdM_range > 0.07 | stdM_mean > 0.10 | stdM_range./stdM_mean < 2); 
+    fprintf('Filtering %d subsets with std ranges > 0.07 or std means > 0.9\n',length(nsy_idx))
+    clear subsets
+    % Get a moving minimum noisey intervals The window here will probably vary pit to pit
+    % and based on the behavior of the noise. This also may only work when
+    % the majority of noise variance is lies above the minimum.
+    filteredSeries = series;
+    for i = 1:length( nsy_idx )
+        subset = [];
+        % Extract this noisy period from the raw series
+        if nsy_idx( i ) == 1
+            subset_idx =  1 : change_idx(nsy_idx( i ) );
+        else
+        subset_idx = change_idx( nsy_idx( i ) - 1 ) : change_idx( nsy_idx( i ) ) ;
+        end
+        subset = series( subset_idx );
+        % Test to see if noise is complete garbage or not (varies quickly over full
+        % range of probe)
+%         if range(subset) > 0.40 % trying to set this higher than a rain event, though rain events should make it through
+%            %fprintf('>>>>> Data appear to be garbage. Tossing this whole subset <<<<<\n')
+%            %fprintf('Range of subset from idx %d-%d > 0.4; %d points removed.\n',...
+% %                min(subset_idx),...
+% %                max(subset_idx),...
+% %                length(subset));
+% %            subset(:) = NaN; 
+%            
+%            fprintf('>>>>> Data appear to be garbage. That is OK for now. <<<<<\n')
+%         else % If there is a faint signal in the noise, extract
+        % Get moving minimum
+        minM = movmin( subset , 21 );
+        keep_idx = subset == minM;
+        subset( ~keep_idx ) = NaN;
+        fprintf('>>>>> Signal may be present! Keeping apparent minimum <<<<<\n')
+        fprintf('Removed %d / %d (%1.1f%%) of noisy points\n',...
+            sum(~keep_idx), length(subset),...
+            sum(~keep_idx)/length(subset) * 100 ); %percentage of pts removed
+%         end
+        filteredSeries(subset_idx) = subset;
+    end
+    % testDiff here is just data removed by the movmin filter. These will
+    % get removed in the parent function.
+    testDiff = ~isfinite(filteredSeries) ;
 else
-    error('Invalid filter type (mean, median, shift, sigma, or hampel)')
+    error('Invalid filter type (mean, median, shift, sigma, noisy, or hampel')
 end
 
 if ignore_nans

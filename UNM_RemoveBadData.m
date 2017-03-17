@@ -1522,7 +1522,7 @@ if iteration > 4
     
     % Get the values flagged for std deviation
     [ ~, stdflag ] = stddev_filter(fc_raw_massman_wpl_good, ...
-        sd_filter_windows, sd_filter_thresh, sitecode, year_arg );
+        sd_filter_windows, sd_filter_thresh,  true , sitecode, year_arg );
     
     % Change bad values in idx_NEE_good
     % use the new way

@@ -1,6 +1,8 @@
 function [ filtered_array, sdflag ] = stddev_filter( array_in, ...
                                                      filter_windows, ...
-                                                     std_dev, varargin )
+                                                     std_dev, ...
+                                                     showfig,...
+                                                     varargin )
 % filter windows is in days
 
 % Initialize the output array and remove-data flag
@@ -18,14 +20,19 @@ if length( varargin ) > 0
 else
     fig_title = 'Standard deviation filter';
 end
+
+if showfig
 h_fig1 = figure( 'Name', fig_title, ...
     'Position', [150 150 1050 550], 'Visible', 'on' );
 hold on;
 % Colors and legend strings for plotting
 colors = { '.r', '.m', '.b', '.y', '.g', '.c' };
 leg_strings = {};
+end
 
 % Loop through each filter window and filter/plot
+% This a a multi-pass method. Previously filtered data, not raw data, gets
+% filtered multiple times.
 for i=1:length( filter_windows );
     
     window = filter_windows( i );
@@ -36,8 +43,10 @@ for i=1:length( filter_windows );
     end
     
     % Plot the previously filtered array for contrast and add legend
+    if showfig
     plot( 1:length( filtered_array ), filtered_array, colors{i} );
     leg_string{ i } = sprintf( '%1.1f Days, SD = %1.2f', window, std_dev );
+    end
     
     % Filter the array
     [ filtered_array, rem_idx ] = filterseries( filtered_array, ...
@@ -48,9 +57,11 @@ for i=1:length( filter_windows );
 end
     
 % Plot final points
+if showfig
 plot( 1:length( filtered_array ), filtered_array, '.k' );
 leg_string{ i + 1 } = 'Filtered data';
 legend( leg_string, 'Location', 'SouthWest' );
+end
 
 % If needed, convert back to table
 if isa( array_in, 'table' );

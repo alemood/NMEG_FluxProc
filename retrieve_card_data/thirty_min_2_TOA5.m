@@ -32,7 +32,7 @@ thirty_min_file = dir(fullfile(raw_data_dir, '*.flux.dat'));
 ts_data_file = dir(fullfile(raw_data_dir, '*.ts_data*'));
 
 % Directory to put new TOA5 files in
-toa5_data_dir = fullfile(get_site_proc_directory( site ), 'toa5');
+toa5_data_dir = fullfile(get_site_directory( site ), 'toa5');
 
 if isempty(thirty_min_file)
     error('There is no thirty-minute data file in the given directory');

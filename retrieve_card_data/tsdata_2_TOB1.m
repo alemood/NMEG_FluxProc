@@ -50,7 +50,7 @@ ts_data_file_struct = dir(fullfile(raw_data_dir, '*.ts_data*'));
 if args.Results.wireless
    tsdata_dir = fullfile(raw_data_dir, 'ts_data_patch');
 else
-    tsdata_dir = fullfile(get_site_directory( site ), 'ts_data');
+    tsdata_dir = fullfile(get_site_proc_directory( site ), 'ts_data');
 end
 
 

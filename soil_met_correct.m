@@ -1,4 +1,4 @@
-function T_soil_corr =  soil_met_correct( sitecode, year, write_qc, write_rbd )
+function T_soil_corr =  soil_met_correct( sitecode, year, write_qc, write_rbd , showfig )
 % SOIL_MET_CORRECT - extracts soil water content (SWC), soil temperature,
 % and soil heat flux (SHF and TCAV) data from fluxall files corrects it.
 %
@@ -13,6 +13,7 @@ function T_soil_corr =  soil_met_correct( sitecode, year, write_qc, write_rbd )
 % INPUTS:
 %    sitecode: UNM_sites object; specifies the site
 %    year: four-digit year: specifies the year
+%    showfig: logical; show figures = true, suppress = false
 %
 % OUTPUTS
 %    T_out: MATLAB table: soil variables extracted from data
@@ -25,8 +26,31 @@ function T_soil_corr =  soil_met_correct( sitecode, year, write_qc, write_rbd )
 
 % Load data
 sitecode = UNM_sites( sitecode );
+try
 fluxall_T = parse_fluxall_txt_file( sitecode, year );
+qc_T = parse_fluxall_qc_file( sitecode, year );
+catch
+    fprintf('%s %d fluxall missing, skipping this year.\n',...
+        char(sitecode),...
+        year)
+    return
+end
 
+% -----------------------------------
+% Make a night flag based on PAR < 20
+% -----------------------------------
+if isequal( height( qc_T ) , height( fluxall_T ) )
+%re_par = '([Pp][Aa][Rr]_)(faceup|face_up)(\w+)';
+%par_idx = find( ~cellfun( @isempty, regexp( fluxall_T.Properties.VariableNames, re_par )));
+
+ night_flag =  zeros( height( qc_T ) , 1 );
+ night_flag( find( isnan( qc_T.Par_Avg ) ) ) = NaN;
+ night_flag( find(  qc_T.Par_Avg  < 20 ) ) = 1;
+ night_flag = array2table( night_flag , 'VariableNames', {'NIGHT'} );
+else
+    fprintf('No night flag made for %s %d QC file',char(sitecode),year)
+end
+clear qc_T
 % -----
 % Get soil water content and soil temperature data from fluxall data
 % -----
@@ -176,7 +200,7 @@ if write_qc
     fname = [outpath sprintf('%s_%d_soilmet_qc.txt', ...
         get_site_name( sitecode ), year )];
     fprintf( 'Writing %s...\n', fname );
-    writetable( [ tstamps T_soil_corr ], fname, 'Delimiter', ',' );
+    writetable( [ tstamps night_flag T_soil_corr ], fname, 'Delimiter', ',' );
 end
 
 %========================REMOVE BAD DATA===============================
@@ -222,9 +246,14 @@ if ~isempty( T_soil_rbd )
     else
         sd_filter_windows = [ 1, 1, 1 ];
     end
+    shift_tol = [ 0.07 ];
+    noise_filter_windows = [ 5, 21]; % ; 5 , 17 ;5 ,21 ]; % array of backward and forward steps
+    med_filter_windows = [ 3, 5, 13 ];
     sd_filter_thresh = 3;
     
-    for i = 1:length( T_soil_rbd.Properties.VariableNames )
+   % for i = 1:length( T_soil_rbd.Properties.VariableNames )
+  for i = 1:length(cols_swc)
+  %     for i = 1:1
         colname = T_soil_rbd.Properties.VariableNames{ i };
         col = T_soil_rbd( :, colname );
         % Sometimes too little data available to filter
@@ -232,12 +261,37 @@ if ~isempty( T_soil_rbd )
             filt_col = col;
             filt_col{ ~isnan( col{:,1} ), 1 } = nan;
         else
+            %---------------------
+            % Filtering routines
+            %---------------------
+            set(0,'DefaultFigureVisible','off');
+            fprintf('-------------------------\n')
+            fprintf('FILTERING %s\n',colname)
+            if strcmpi(colname,'SWC_P1_5_AVG') & sitecode == 4
+              % Noise filter
+             [ filt_col, ~ ] = noise_filter( col, noise_filter_windows, showfig);
+             title(['NOISE FILTER: ',colname],'Interpreter','none');
+             sd_filter_windows = [ 1, 1, 1 ];
+            else
+            [filt_col, ~ ] = shift_filter( col, 1,shift_tol , showfig );
+            title(['SHIFT FILTER: ',colname],'Interpreter','none');
+            end
+            % 1D median filter
+            [ filt_col, ~ ] = median_filter( filt_col, med_filter_windows, showfig);
+            title(['MEDIAN FILTER: ',colname],'Interpreter','none');
+            
             % Get the values flagged for std deviation
-            [ filt_col, ~ ] = stddev_filter( col, ...
-                sd_filter_windows, sd_filter_thresh, sitecode, year );
+            [ filt_col, ~ ] = stddev_filter( filt_col, ...
+               sd_filter_windows, sd_filter_thresh, showfig, sitecode, year );
+             title(['STD FILTER: ',colname],'Interpreter','none');
+            % Noise filter
+%             [ filt_col, ~ ] = noise_filter( filt_col, noise_filter_windows);
+%             title(['NOISE FILTER: ',colname],'Interpreter','none');
+         
         end
         T_soil_rbd( :, colname ) = filt_col;
-    end
+  end
+     set(0,'DefaultFigureVisible','on');
     
 end % if ~empty
 
@@ -442,11 +496,24 @@ switch sitecode
             idx = ts > datenum( 2014,1,24 ) & ts < datenum( 2014,2,13 );
             [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SOILT_O1_30' );
             T_soil_rbd{ idx, cols_rbd } = NaN;
+            % Program change induced a shift
+            if sitecode==UNM_sites.PJ_girdle              
+                idx = 11495:12172;
+                [ cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd,...
+                    'SWC_O2_[10|30]|SWC_J2_[1|3]|SWC_J3_30|SWC_O1_30' );
+                T_soil_rbd{ idx, cols_rbd } = NaN;
+                %P1_5 is garbage
+                T_soil_rbd{1:end,'SWC_P1_5'} = NaN;
+            end
         elseif year == 2015
             % Our 30cm SOILT probe has a spike
             idx = ts > datenum( 2015,7,31 ) & ts < datenum( 2015,6,6,12,0,0 );
             [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SOILT_J3' );
-            T_soil_rbd{ idx, cols_rbd } = NaN;
+            T_soil_rbd{ idx, cols_rbd } = NaN;          
+        elseif year == 2016 & sitecode == UNM_sites.PJ_girdle
+            idx = ts > datenum( 2016,1,1 ) & ts < datenum( 2017,1,1 );
+            [ cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SWC_P1_5_AVG');
+             T_soil_rbd{ idx, cols_rbd } = NaN;
         end
     case  UNM_sites.PPine
         if year <= 2014
@@ -504,7 +571,7 @@ if write_rbd
     fname = [ outpath sprintf('%s_%d_soilmet_qc_rbd.txt', ...
         get_site_name( sitecode ), year )];
     fprintf( 'Writing %s...\n', fname );
-    writetable( [tstamps T_soil_rbd], fname, 'Delimiter', ',' );
+    writetable( [tstamps night_flag T_soil_rbd], fname, 'Delimiter', ',' );
 end
 %        
 %         t0 = now();
