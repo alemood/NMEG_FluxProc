@@ -84,8 +84,8 @@ fprintf( 1, 'writing %s for %s use...\n', fname, version );
 
 fid = fopen( fname, 'w+' );
 
-if ~strcmpi(pwd,'C:\Code\NMEG_FluxProc')
-    cd('C:\Code\NMEG_FluxProc');
+if ~strcmpi(pwd,'A:\Code\NMEG_FluxProc')
+    cd('A:\Code\NMEG_FluxProc');
 end
 
 if strcmp(version,'in_house')  
