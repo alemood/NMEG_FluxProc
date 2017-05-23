@@ -138,7 +138,7 @@ end
 all_data = vertcat( chunks_cell{ : } );
 all_data.timestamp = datenum( all_data.year, all_data.month, all_data.day, ...
                               all_data.hour, all_data.min, all_data.second );
-all_data = dataset_fill_timestamps( all_data, ...
+all_data = table_fill_timestamps( all_data, ...
                                     'timestamp', ...
                                     't_min', min( all_data.timestamp ), ...
                                     't_max', t_end );
@@ -162,6 +162,7 @@ if exist(outfile) ~= 2
     save( outfile , 'all_data');
 else
     oldfile =  importdata ( outfile );
+    oldfile.date = datestr( oldfile.timestamp, 'mmddyy' );
     
     if  isa(all_data,'dataset')
         all_data = dataset2table(all_data);
