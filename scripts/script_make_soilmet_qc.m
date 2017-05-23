@@ -1,19 +1,17 @@
 %close all;
 %clear all;
 
-sitelist = {UNM_sites.GLand, UNM_sites.SLand, ...
-    UNM_sites.JSav, UNM_sites.PPine, ...
-    UNM_sites.MCon};
-sitelist = { UNM_sites.PJ_girdle , UNM_sites.PJ };%, ...
+sitelist = {UNM_sites.GLand, UNM_sites.SLand, UNM_sites.New_GLand...
+    UNM_sites.JSav, UNM_sites.PJ , UNM_sites.PJ_girdle, ...
+    UNM_sites.PPine, UNM_sites.MCon , UNM_sites.MCon_SS};
+sitelist = { UNM_sites.GLand};%, ...
     %UNM_sites.SLand};
-yearlist = 2009:2016;%2007:2015;%2013:2014;% 2009:2013;
-write_qc = true;
-write_rbd = true;
+yearlist = 2010;%2007:2015;%2013:2014;% 2009:2013;
+write_qc = false;
+write_rbd = false;
 showfig = false;
 
-if ~showfig
-    set(0,'DefaultFigureVisible','off'); 
-end
+
 count = 1;
 for i = 1:length(sitelist);
     for j = 1:length(yearlist)
@@ -26,11 +24,12 @@ for i = 1:length(sitelist);
             write_qc,...
             write_rbd,...
             showfig);
-        catch
+        catch err
+            rethrow( err );
         end
     
         count = count + 1;
-        close all;
+        %close all;
     end
 end
  set(0,'DefaultFigureVisible','on');
