@@ -77,3 +77,5 @@ retrieve_card_data/raw_ancillary_2_TOA5.m
 scripts/script_make_qc_gf.m
 profiler_results
 m_exchange_utils/f2matlab/
+m_exchange_utils/fanchart/
+m_exchange_utils/fanchart/*.*

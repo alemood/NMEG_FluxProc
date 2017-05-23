@@ -366,9 +366,9 @@ methods
                 char( obj.sitecode ), ...
                 this_year ) );
             load( fname );
-            if isempty(all_data.date)
+           % if isempty(all_data.date)
                 all_data.date = datestr(all_data.timestamp,'mmddyy');
-            end
+           % end
             if ~isnumeric(all_data.date)
             all_data.date = str2num( all_data.date );
             end

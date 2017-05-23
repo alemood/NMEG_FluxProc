@@ -7,6 +7,7 @@ function [ filtered_array, flag ] = noise_filter( array_in, ...
 % Initialize the output array and remove-data flag
 if isa( array_in, 'table' );
     filtered_array = table2array( array_in );
+    colname = array_in.Properties.VariableNames{1};
 else
     filtered_array = array_in;
 end
@@ -16,8 +17,10 @@ flag = repmat( false, length( filtered_array ), 1 );
 if length( varargin ) > 0
     fig_title = sprintf( '%s %d median filter', ...
         get_site_name( varargin{1} ), varargin{2} );
+elseif exist('colname')
+    fig_title = sprintf('%s Noise filter',colname);
 else
-    fig_title = 'Noise filter';
+    fig_title = 'Noise Filter';
 end
 
 if showfig

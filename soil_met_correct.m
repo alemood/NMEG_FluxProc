@@ -69,6 +69,12 @@ res_idx = find( ~cellfun( @isempty, regexp( res.qc_mapping, re_soil )));
 fluxall_idx = ismember(res.current( res_idx ), fluxall_T.Properties.VariableNames);
 % Extract indexed soil columns from the fluxall table
 T_soil = fluxall_T( :, res.current( res_idx( fluxall_idx) ) );
+% Sometimes regexp acts weird and cuts up fluxall header variables and the
+% code does not pick up any columns. Throw an error here
+if isempty(T_soil)
+    error('Header Resolution Mapping failed')
+    return
+end
 % Rename extracted soil columns with the qc_mapping names
 T_soil.Properties.VariableNames = res.qc_mapping( res_idx( fluxall_idx) );
 
@@ -93,7 +99,7 @@ switch sitecode
     % sites with cs616s
     case { UNM_sites.GLand, UNM_sites.SLand, UNM_sites.JSav, ...
             UNM_sites.New_GLand, UNM_sites.MCon, UNM_sites.MCon_SS,...
-            UNM_sites.PPine }
+            UNM_sites.PPine}
         
         % If CS616s are present we need to convert period to VWC and 
         % temperature correct them. Make arrays of matched SoilT and SWC 
@@ -162,7 +168,7 @@ switch sitecode
         % Only matched SoilT sensor columns present
         elseif length( cols_ts_tcor ) > 0
             swc_c = cs616_period2vwc( T_soil( :, cols_swc ),...
-                'draw_plots', false );
+                'draw_plots', false);
             swc_c_tc = cs616_period2vwc( T_soil( :, cols_swc_tcor ), ...
                 'T_soil', T_soil( :, cols_ts_tcor ), 'draw_plots', false );
         % No SoilT data present
@@ -233,11 +239,25 @@ if ~isempty( T_soil_rbd )
     T_soil_rbd = array2table( data, ...
         'VariableNames', T_soil_corr.Properties.VariableNames );
     
+    % Get SHF column namaes
+    [cols_shf_corr, ts_loc] = regexp_header_vars( T_soil_rbd, 'shf|SHF' );
+    % Remove SHF values > 200 < -150
+    data = table2array( T_soil_rbd );
+    subset = data( :, ts_loc );
+    bad_ts = subset > 200 | subset < -150;
+    subset( bad_ts ) = NaN;
+    data( :, ts_loc ) = subset;
+    T_soil_rbd = array2table( data, ...
+        'VariableNames', T_soil_corr.Properties.VariableNames );
+    
     % Clean out columns that are all NaN
     allnan = sum( isnan( table2array( T_soil_rbd ))) >= ...
         size( T_soil_rbd, 1 ) - 48;
     T_soil_rbd( :, allnan ) = [];
     
+    % --------------------------------------------------------------------
+    %                           FILTERING
+    % --------------------------------------------------------------------
     % Now filter with the standard deviation filter
     % First set up filter - PJ sites need more filtering
     if sitecode==UNM_sites.PJ || sitecode==UNM_sites.PJ_girdle ...
@@ -251,9 +271,12 @@ if ~isempty( T_soil_rbd )
     med_filter_windows = [ 3, 5, 13 ];
     sd_filter_thresh = 3;
     
-   % for i = 1:length( T_soil_rbd.Properties.VariableNames )
+    % --------------------
+    % SWC FILTERING
+    % --------------------
+    
+  % for i = 1:length( T_soil_rbd.Properties.VariableNames )
   for i = 1:length(cols_swc)
-  %     for i = 1:1
         colname = T_soil_rbd.Properties.VariableNames{ i };
         col = T_soil_rbd( :, colname );
         % Sometimes too little data available to filter
@@ -264,34 +287,66 @@ if ~isempty( T_soil_rbd )
             %---------------------
             % Filtering routines
             %---------------------
-            set(0,'DefaultFigureVisible','off');
-            fprintf('-------------------------\n')
-            fprintf('FILTERING %s\n',colname)
-            if strcmpi(colname,'SWC_P1_5_AVG') & sitecode == 4
+           
+            if strcmpi(colname,'SWC_P1_5_AVG') & sitecode == 4 & year == 2016
               % Noise filter
              [ filt_col, ~ ] = noise_filter( col, noise_filter_windows, showfig);
-             title(['NOISE FILTER: ',colname],'Interpreter','none');
+             %title(['NOISE FILTER: ',colname],'Interpreter','none');
              sd_filter_windows = [ 1, 1, 1 ];
             else
-            [filt_col, ~ ] = shift_filter( col, 1,shift_tol , showfig );
-            title(['SHIFT FILTER: ',colname],'Interpreter','none');
+            [filt_col, ~ ] = shift_filter( col, 1,shift_tol , showfig  );
+           % title(['SHIFT FILTER: ',colname],'Interpreter','none');
             end
             % 1D median filter
             [ filt_col, ~ ] = median_filter( filt_col, med_filter_windows, showfig);
-            title(['MEDIAN FILTER: ',colname],'Interpreter','none');
+            %title(['MEDIAN FILTER: ',colname],'Interpreter','none');
             
             % Get the values flagged for std deviation
+            try
             [ filt_col, ~ ] = stddev_filter( filt_col, ...
                sd_filter_windows, sd_filter_thresh, showfig, sitecode, year );
-             title(['STD FILTER: ',colname],'Interpreter','none');
+            catch err
+                fprintf('Standard Deviation Filter failed on %s\n', colname )
+                %h_fig_fail = figure;
+                %plot( col{ : , colname },'.k' );title(' Failed \sigma filter ');
+                %ylabel(colname)
+            end
+            %  title(['STD FILTER: ',colname],'Interpreter','none');
             % Noise filter
-%             [ filt_col, ~ ] = noise_filter( filt_col, noise_filter_windows);
-%             title(['NOISE FILTER: ',colname],'Interpreter','none');
-         
-        end
+            % [ filt_col, ~ ] = noise_filter( filt_col, noise_filter_windows);
+            % title(['NOISE FILTER: ',colname],'Interpreter','none');
+        end       
         T_soil_rbd( :, colname ) = filt_col;
   end
-     set(0,'DefaultFigureVisible','on');
+% ---------------------
+% Soil Heat Flux Plates
+% ---------------------
+    showfig = false; 
+    warning('Turning figures OFF here to aid SHF QC. Remove later!')
+    sd_filter_windows = [ 1, 1, 1 ];
+    shift_tol = [ 20 ];
+    noise_filter_windows = [ 5, 21]; % ; 5 , 17 ;5 ,21 ]; % array of backward and forward steps
+    med_filter_windows = [1 ];
+    sd_filter_thresh = 3;
+    [cols_shf, ~] = regexp_header_vars( T_soil_rbd, 'shf|SHF' );
+     for i = 1:length(cols_shf)
+        colname = cols_shf{ i };
+        col = T_soil_rbd( :, colname );
+        % Sometimes too little data available to filter
+        if sum( ~isnan( col{:,1} ) ) < min( sd_filter_windows )*48*2
+            filt_col = col;
+            filt_col{ ~isnan( col{:,1} ), 1 } = nan;
+        else
+          % Shift filter
+          [filt_col, ~ ] = shift_filter( col, 1,shift_tol , showfig );
+          % 1D median filter
+          [ filt_col, ~ ] = median_filter( filt_col, med_filter_windows, showfig);
+          % STD Filter
+          [ filt_col, ~ ] = stddev_filter( filt_col, ...
+               sd_filter_windows, sd_filter_thresh, showfig, sitecode, year );
+        end
+        T_soil_rbd( :, colname ) = filt_col;
+     end
 end % if ~empty
 
 %============ Individual site bad data removal ============
@@ -310,11 +365,38 @@ switch sitecode
           idx = ts > datenum( 2009, 2, 27, 12, 30, 0 );
           [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SWC_O|SWC_G' );
           T_soil_rbd{ idx, cols_rbd } = NaN;
+          % Bad HFPs at various points
+          % G1
+          idx = ts > datenum( 2009 , 8 , 16 , 0 , 0 , 0 ) &...
+              ts < datenum( 2009 , 11, 14 , 0 , 0 , 0 );
+          [cols_rbd , ~ ]  = regexp_header_vars( T_soil_rbd , 'SHF_G1' );
+          T_soil_rbd{ idx , cols_rbd } = NaN;
+          % G2
+          idx = ts > datenum( 2009 , 3 , 5 ) &...
+              ts < datenum( 2009 ,6, 12 );
+          [cols_rbd , ~ ]  = regexp_header_vars( T_soil_rbd , 'SHF_G2' );
+          T_soil_rbd{ idx , cols_rbd } = NaN;
+          % O1
+          idx = ts > datenum( 2009 , 7 ,  20 ) &...
+              ts < datenum( 2009 ,10, 19 );
+          [cols_rbd , ~ ]  = regexp_header_vars( T_soil_rbd , 'SHF_O1' );
+          T_soil_rbd{ idx , cols_rbd } = NaN;
+          % O2
+          idx = ts > datenum( 2009 , 3 ,  5 ) &...
+              ts < datenum( 2009 ,6, 12 );
+          [cols_rbd , ~ ]  = regexp_header_vars( T_soil_rbd , 'SHF_O2' );
+          T_soil_rbd{ idx , cols_rbd } = NaN;
+          
       case 2011
           % There is a level shift in late 2011 SWC data
           idx = ts > datenum( 2011, 3, 21, 11, 0, 0 );
           [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SWC_echo_O1' );
           T_soil_rbd{ idx, cols_rbd } = NaN;
+          % HFPs
+          idx = ts > datenum( 2011 , 4 , 18 ) &...
+              ts < datenum( 2011 ,6, 14 );
+          [cols_rbd , ~ ]  = regexp_header_vars( T_soil_rbd , 'SHF_G2' );
+          T_soil_rbd{ idx , cols_rbd } = NaN;
       case {2012, 2013}
           % All 2012 and 2013 SWC data from G1 52p5 is bad
           T_soil_rbd{ :, 'SWC_G1_52p5_AVG' } = NaN;
@@ -328,6 +410,38 @@ switch sitecode
 
     
   case UNM_sites.New_GLand
+    % HFP calibrations from 2016 New_GLand CR 3k program 
+      shf_cal_1= 34.6;            % 'H073055 grass 1
+      shf_cal_2= 31.6;           % 'H063015 grass 2
+      shf_cal_3= 34.2;            % 'HO7 3057 open 1
+      shf_cal_4= 34.4;            % 'HO33300  open 2
+      
+    % Some crazy values at beginning of time series  
+    idx = ts < datenum(2010,6,16);
+    [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SHF_(G1|O1|O2)' )
+    T_soil_rbd{ idx, cols_rbd } = NaN;
+    % Convert mV output using a calibration coefficient to be
+    % found...somewhere. Who knows where...
+    idx = ts > datenum(2010,7,15) & ...
+        ts < datenum( 2014 , 1 , 17 , 15 , 30 , 0);
+    [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SHF_G1' )
+    T_soil_rbd{ idx, cols_rbd } = shf_cal_1.*T_soil_rbd{ idx, cols_rbd };
+    
+    idx = ts > datenum(2010,6,15) & ...
+        ts < datenum( 2014 , 6 , 13 , 10 , 30 , 0);
+    [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SHF_G2' )
+    T_soil_rbd{ idx, cols_rbd } = shf_cal_2.*T_soil_rbd{ idx, cols_rbd };
+    
+    idx = ts > datenum(2010,6,15) & ...
+        ts < datenum( 2014 , 1 , 17 , 13 , 30 , 0);
+    [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SHF_01' )
+    T_soil_rbd{ idx, cols_rbd } =  shf_cal_3.*T_soil_rbd{ idx, cols_rbd };
+    
+    idx = ts > datenum(2010,6,15) & ...
+        ts < datenum( 2014 , 1 , 17 , 13 , 30 , 0);
+    [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SHF_02' )
+    T_soil_rbd{ idx, cols_rbd } =  shf_cal_4.*T_soil_rbd{ idx, cols_rbd };
+      
     switch year
       case 2010
         % Most of 2010 SWC from install to May 12 is bad
@@ -415,8 +529,21 @@ switch sitecode
             ts < datenum( 2014, 1, 10, 10, 30, 0 );
         T_soil_rbd( idx, 'SWC_J1_5_AVG' ) = T_soil_rbd( idx, 'SWC_conv_J1_5_AVG' );
     end
+    
+    if year <= 2013
+        % Before 2013, SHF plates were not multiplied by multipliers
+        % specific to each plate. Applying  mean of coefficients used in
+        % 2017cr5k programs
+        hfp_mean_cal = 34;
+        idx = ts < datenum( 2013, 6 ,1 , 0, 0 , 0 );
+        [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SHF_' );
+        T_soil_rbd{ idx , cols_rbd } =  34 .* T_soil_rbd{ idx , cols_rbd };
+        
+    end
+    
     % Now individual year fixes.
     switch year
+      
       case {2007, 2008}
           % Bad SoilT data in early years
           [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SOILT_(O[12]|J1_5)' );
@@ -435,17 +562,34 @@ switch sitecode
           idx = ts > datenum( 2009, 7, 8, 15, 30, 0 );
           [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SOILT_J1_(5|10)' );
           T_soil_rbd{ idx, cols_rbd } = NaN;
+          % Wires switched or SHF O1 flipped upside starting in 2009 
+          idx = ts > datenum( 2009 , 7 , 7 , 13 , 30 , 0 );
+          [cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_01');
+          T_soil_rbd{ idx , cols_rbd } = -1.*T_soil_rbd{ idx , cols_rbd};
       case {2010, 2011}
           % Bad SoilT in J1 5 and 10 starts in 2009
           idx = ts < datenum( 2011, 11, 18, 17, 30, 0 );
           [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SOILT_J1_(5|10)' );
           T_soil_rbd{ idx, cols_rbd } = NaN;
+          % Wires switched or SHF O1 flipped upside down 
+          [cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_O1');
+          T_soil_rbd{ : , cols_rbd } = -1.*T_soil_rbd{ :, cols_rbd};
+      case 2012
+          % Wires switched or SHF O1 flipped upside down 
+          idx = ts < datenum( 2012 , 6 ,12 , 18 , 0, 0 );
+          [cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_O1');
+          T_soil_rbd{ : , cols_rbd } = -1.*T_soil_rbd{ :, cols_rbd};
       case 2013
           % Constant values to remove
           idx = ts > datenum( 2013, 7, 25, 13, 0, 0 ) & ...
               ts < datenum( 2013, 10, 22, 13, 0, 0 );
           [cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SOILT_[OJ][1-3]' );
           T_soil_rbd{ idx, cols_rbd } = NaN;
+          % Whack SHF j2 values
+          idx = ts < datenum( 2013 , 6 , 3 , 1 , 30, 0 ) & ...
+              ts < datenum( 2013, 10, 11, 14, 30, 0 );
+          [cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_J2');
+          T_soil_rbd{ : , cols_rbd } = NaN;
       case 2014
         % Bad period before sensor pits were redone
           idx = ts > datenum( 2014, 1, 10, 10, 0, 0 ) & ...
@@ -456,8 +600,19 @@ switch sitecode
           idx = ts > datenum( 2014, 7, 1, 23, 30, 0 ) & ...
               ts < datenum( 2014, 7, 15, 22, 0, 0 );
           T_soil_rbd{ idx, 'SOILT_J2_5_AVG' } = NaN;
+          % Not enoughd data from J3
+          idx = ts < datenum( 2014, 3 , 1 ) & ...
+              ts < datenum( 2014, 3, 31);
+          [cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_O1');
+          T_soil_rbd{ : , cols_rbd } = NaN;
+       case 2016
+           % HFPs 
+           idx = [6369:8718 , 12260:17567];
+           T_soil_rbd{ idx , 'SHF_O1_AVG' } = NaN;
+           
     end
-    
+    % FIXME - Why are PJ RBD rules getting applied to BOTH sites after
+    % bringing in LMs files?
     case { UNM_sites.PJ, UNM_sites.PJ_girdle, sitecode==UNM_sites.TestSite }
         if year > 2008 && year < 2014
             if sitecode==UNM_sites.PJ | sitecode==UNM_sites.TestSite
@@ -477,14 +632,62 @@ switch sitecode
                 '(^x[0-9][0-9]WC|^WC)', 'SWC_LM' );
             newColNames = regexprep(newColNames, 'AVGH', 'AVG');
             soilqc.Properties.VariableNames = newColNames;
+            % a Datetime object was introduced in R2017a. convert to
+            % string, but depending on the soilqc file, it may not
+            % matter...
+            try
+            if isdatetime(soilqc.ts)
+                soilqc.ts = string(soilqc.ts);
+            end
+            catch err
+            end
             % Now join with T_soil_rbd
             new = array2table( repmat( nan, 1, size( soilqc, 2 )), ...
                 'VariableNames', newColNames );
-            soilqc = [ soilqc; new ];
+           
+            try
+                % Does not append, maybe due to changes in matlab
+                soilqc = [ soilqc; new ]; 
+            catch err
+                soilqc = vertcat( soilqc, new);
+            end
             T_soil_rbd = [ T_soil_rbd, ...
                 soilqc( :, ~cellfun( 'isempty', ...
                 strfind(newColNames, '_LM_' )))];
         end
+    if sitecode == UNM_sites.PJ | sitecode == UNM_sites.TestSite
+        if year < 2010 
+            idx = ts < datenum( 2009, 5 , 21 );
+            [ cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_P1' );
+            T_soil_rbd{ idx , cols_rbd } = 35.2 .* T_soil_rbd{ idx , cols_rbd };
+            [ cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_J1' );
+             T_soil_rbd{ idx , cols_rbd } = 32.1 .* T_soil_rbd{ idx , cols_rbd };
+        end
+        
+        if year <= 2014
+            idx = ts > datenum( 2012 , 5 , 29 , 0 , 0 , 0 ) & ....
+                ts < datenum( 2014 , 2 , 10 , 0 , 0 ,0 );
+            [ cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_J2' );
+            T_soil_rbd{ idx , cols_rbd } = NaN;
+        end
+        switch year 
+            case 2012
+                idx = ts > datenum( year , 2 , 12 , 3 , 30 , 0) & ...
+                    ts < datenum( year , 3 , 19 , 8 , 0 , 0 );
+                [ cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_J1' );
+                T_soil_rbd{ idx , cols_rbd } = NaN;
+            case 2014
+                idx = ts > datenum( year , 3 , 26 , 18 , 0 , 0) & ...
+                    ts < datenum( year , 1 , 1 , 16 , 30 , 0 );
+                [ cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_P1' );
+                T_soil_rbd{ idx , cols_rbd } = NaN;
+            case 2015
+            case 2016
+                idx = ts > datenum( year , 10 , 13 , 2 , 30 , 0);
+                [ cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_J1' );
+                T_soil_rbd{ idx , cols_rbd } = NaN;
+        end
+        
         if year == 2013
             % Our 30cm SOILT probe has a spike
             idx = ts > datenum( 2013,8,5,4,30,0 ) & ts < datenum( 2013,9,26 );
@@ -514,6 +717,8 @@ switch sitecode
             [ cols_rbd, ~] = regexp_header_vars( T_soil_rbd, 'SWC_P1_5_AVG');
              T_soil_rbd{ idx, cols_rbd } = NaN;
         end
+    elseif sitecode == UNM_sites.PJ_girdle 
+    end
     case  UNM_sites.PPine
         if year <= 2014
             % Prior to Oct 2nd 2014, all our probes look crazy
@@ -560,9 +765,116 @@ switch sitecode
       
 end
 
+%=============== Calculate Soil Heat Flux from HFP01s ==================
+calc_shf = false;
+if calc_shf
+fprintf('-------Calculating SHF and storage @ %s -----\n',char(sitecode))
 
+re_shf_list = {'SHF_'};
+re_swc = {'SWC_[A-Z]\d_\d(?!\d).+(tcor)' , ...
+    'SWC_[A-Z]\d_[2p5|5]_[A-Za-z]' };
+re_tcav = {'TCAV_|tcav' , ... 
+    'SOILT_[A-Z]\d_[2p5|5]'};
+
+shf_idx = []; count = 1;
+while isempty(shf_idx)
+    [shf_vars shf_idx] = regexp_header_vars( T_soil_rbd, 'SHF_' );
+end
+
+swc_idx = []; count = 1;
+while isempty(swc_idx);
+    [swc_vars swc_idx] = regexp_header_vars( T_soil_rbd, re_swc{ count } );
+    count = count + 1;
+end
+
+tcav_idx = []; count = 1;
+while isempty(tcav_idx)
+    [tcav_vars tcav_idx] = regexp_header_vars( T_soil_rbd, re_tcav{ count } );
+    count = count + 1;
+end
+
+pit_re = '([PJOG][\d])' ;
+shf_pits = regexp(shf_vars, pit_re ,'match'); shf_pits = [shf_pits{:}];
+swc_pits = regexp(swc_vars, pit_re ,'match'); swc_pits= [swc_pits{:}];
+tcav_pits = regexp( tcav_vars, pit_re , 'match'); tcav_pits = [ tcav_pits{:} ];
+
+% Match pits by finding intersections. Indexes reference index in
+% [VARIABLE]_vars. Extract from T_soil_rbd table by using (tcav_idx(keep_tcav))
+[~ , keep_shf , keep_swc ] = intersect(shf_pits , swc_pits);
+[ ~, ~ , keep_tcav ] = intersect(shf_pits, tcav_pits);
+
+shf_idx = shf_idx(keep_shf);
+tcav_idx = tcav_idx(keep_tcav);
+swc_idx = swc_idx(keep_swc);
+
+
+% switch sitecode
+%     case { UNM_sites.GLand ,  UNM_sites.JSav , UNM_sites.SLand, ...
+%            UNM_sites.New_GLand , UNM_sites.MCon, UNM_sites.PPine,...
+%            UNM_sites.MCon_SS }
+%        
+%         [swc_vars swc_idx] = regexp_header_vars( T_soil_rbd, 'SWC_[A-Z]\d_\d(?!\d).+(tcor)' );
+%         
+%         [soilt_vars soilt_idx] = regexp_header_vars( T_soil_rbd, 'TCAV_|tcav' );
+%         [shf_vars shf_idx] = regexp_header_vars( T_soil_rbd, 'SHF_' );
+%     % Sites without TCAV will need to have shallow probes averaged
+%     case { UNM_sites.PJ, UNM_sites.PJ_girdle, UNM_sites.TestSite }
+%         
+%         [swc_vars swc_idx] = regexp_header_vars( T_soil_rbd,  'SWC_[A-Z]\d_[2p5|5]_[A-Za-z]' );
+%         % Average 5 and 10 cm probes
+%         [soilt_vars soilt_idx] = regexp_header_vars( T_soil_rbd, 'SOILT_[A-Z]\d_[5|10]' );
+%         soilt_subset = T_soil_rbd(:,soilt_idx);
+%         [shf_vars shf_idx] = regexp_header_vars( T_soil_rbd, 'SHF_' );
+%         
+%         %------------ TCAV APPROXIMATION FOR PJ SITES
+%         cover_cell = {'P','J','O','G'};
+%         soilt_avg = table();
+%         
+%         % Loop through cover types and pits with HFPs to get an average of
+%         % the shallow temperatures
+%         for i = 1:4 % cover type
+%             for j = 1:3 % pits      
+%                 re = strcat( cover_cell{ i } , num2str(j) );
+%                 % Get index 
+%                 pit_chunk_idx = find(~cellfun( @isempty , regexp(soilt_vars, re)));
+%                 if ~isempty(pit_chunk_idx)
+%                 pit_chunk = soilt_subset(:,pit_chunk_idx);
+%                 pit_avg = nanmean( table2array( pit_chunk ), 2);
+%                 pit_avg = array2table( pit_avg , 'VariableNames', ...
+%                     { strcat( 'TCAV_', re , '_AVG' ) } );
+%                 soilt_avg = [soilt_avg, pit_avg ] ;
+%                 end
+%             end
+%         end     
+% end                
+% --------- Calculate Heat Flux ------------
+% Parameters
+SHF_pars = struct ('bulk', 1600,...  % bulk density of soil [ kg / m^3 ]
+    'depth', 0.08,... % depth of heat flux plate [ m ]
+    'wcap', NaN, ...  % heat capacity of moist soil [ J/(kg K) ]
+    'scap', 840 );    % heat capacity of dry soil [ J/(kg K) ]
+SHF_conv_factor =  ones( height ( T_soil_rbd ), 1 ) ;
+SHF_conv_factor = 1;
+
+[G_s SHF_storage ] = calculate_heat_flux(  T_soil_rbd( : , tcav_idx) , ...
+    T_soil_rbd(:,swc_idx), ...
+    SHF_pars, ...
+    T_soil_rbd(:,shf_idx), ...
+    SHF_conv_factor ,...
+    true, ...     % diagnostic plots
+    year,...
+    sitecode );
+
+
+%+++++++++++++Append SHF to RBD Table ++++++
+
+T_soil_rbd = [T_soil_rbd , G_s , SHF_storage ];
 
 %===============Write file==================
+else
+    warning('Skipping heat flux calcs at the moment')
+end
+    
 
 if write_rbd
     %Export to soilmet_qc file
