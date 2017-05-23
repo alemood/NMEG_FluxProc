@@ -26,11 +26,13 @@ args = inputParser
 args.addRequired( 'site', @(x) ( isintval( x ) | isa( x, 'UNM_sites' ) ) );
 args.addRequired( 'raw_data_dir' , @ischar )
 args.addParameter( 'logger_name' , 'flux' , @ischar )
+args.addParameter( 'data_location', 'card', @ischar )
 
 args.parse( site , raw_data_dir, varargin{ : } );
 site = args.Results.site;
 raw_data_dir = args.Results.raw_data_dir;
 logger_name = args.Results.logger_name;
+data_location = args.Results.data_location;
 
 site = UNM_sites( site );
 
@@ -101,12 +103,15 @@ else
         end
     end
     
-    
-    % run CardConvert
-    [convert_status, result] = system(card_convert_cmd);
-    success = success & (convert_status == 0);
-    if convert_status ~= 0
-        error('thirty_min_2_TOA5:CardConvert', 'CardConvert failed');
+    % check to see if this is coming off a card. Wireless is already
+    % converted
+    if strcmpi(data_location,'card')
+        % run CardConvert
+        [convert_status, result] = system(card_convert_cmd);
+        success = success & (convert_status == 0);
+        if convert_status ~= 0
+            error('thirty_min_2_TOA5:CardConvert', 'CardConvert failed');
+        end
     end
     
     if not( isempty( ts_data_file ) )

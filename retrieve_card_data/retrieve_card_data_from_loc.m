@@ -46,7 +46,9 @@ elseif strcmp(logger_name,'soilflux')
         fullfile( data_loc , strcat( this_site ), '*.*x' ) );
     temp_name = ...
         cellfun( @(x) fullfile(this_site,x ), {tower_files.name}, 'UniformOutput', false );
-    [tower_files(1).name tower_files(2).name] = deal(temp_name{1},temp_name{2});
+    for i = 1:length(tower_files)    
+        [tower_files(i).name ] = deal(temp_name{i});
+    end
 end
 
 fprintf(1, 'processing tower data files: ');

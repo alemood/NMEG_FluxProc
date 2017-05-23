@@ -38,20 +38,26 @@ args.parse( site, raw_data_dir, varargin{ : } );
 
 site = args.Results.site;
 raw_data_dir = args.Results.raw_data_dir;
+wireless = args.Results.wireless;
 
 success = true;
 all_ts_fnames = '';
 
-thirty_min_file = dir(fullfile(raw_data_dir, '*.flux.dat'));
-%ts_data_file_struct = dir(fullfile(raw_data_dir, '*.ts_data.dat'));
-ts_data_file_struct = dir(fullfile(raw_data_dir, '*.ts_data*'));
+if ~wireless
+    thirty_min_file = dir(fullfile(raw_data_dir, '*.flux.dat'));
+    %ts_data_file_struct = dir(fullfile(raw_data_dir, '*.ts_data.dat'));
+    ts_data_file_struct = dir(fullfile(raw_data_dir, '*.ts_data*'));
+elseif wireless
+    thirty_min_file = dir(fullfile(raw_data_dir, '*_flux.dat'));
+    ts_data_file_struct = dir(fullfile(raw_data_dir, '*ts_data.dat'));
+end
 
 % Select a safe output directory for wireless patches
-if args.Results.wireless
-   tsdata_dir = fullfile(raw_data_dir, 'ts_data_patch');
-else
+% if args.Results.wireless
+%    tsdata_dir = fullfile(raw_data_dir, 'ts_data_patch');
+% else
     tsdata_dir = fullfile(get_site_proc_directory( site ), 'ts_data');
-end
+% end
 
 
 if isempty(ts_data_file_struct)
@@ -144,6 +150,10 @@ end
 
 % First get the root filename of the original ts_data files from card
 ts_data_roots = regexp(ts_data_file, '.*\.ts_data', 'match', 'once');
+
+if wireless
+    ts_data_roots = regexp(ts_data_file, '.*ts_data*', 'match', 'once');
+end
 ts_data_root = unique(ts_data_roots); % Get root filename
 % Get the root filename for the converted TOB1 files
 default_root = sprintf( 'TOB1_%s', char( ts_data_root ));
@@ -158,9 +168,15 @@ for i = 1:length(default_name_irga1)
     tob_fname = default_name_irga1(i).name;
     % First try to pull out the root with the new filename convention
     % (daily numbered ts_data files)
-    tob_root_full = regexp(tob_fname, [default_root, '_\d{1,3}_'], ...
+    tob_root_full = regexp(tob_fname, [default_root, '_\d{1,3}_'], ...  
         'match', 'once');
     sep = '_'; % will need to replace separator
+    if wireless
+        tob_root_full = regexp(tob_fname, [default_root],...
+            'match', 'once');
+        sep = ''; % no separator
+    end
+    
     % If this gives an empty root, use the older, non-numbered root
     if isempty( tob_root_full )
         tob_root_full = regexp(tob_fname, default_root, 'match', 'once');
