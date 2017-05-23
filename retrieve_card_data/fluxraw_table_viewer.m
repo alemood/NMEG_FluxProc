@@ -177,19 +177,23 @@ function plot_fluxraw_field( axh, tbl, cur_col)
 % get the new variable names
 this_var = tbl.Properties.VariableNames{ cur_col };
 this_data = tbl.( this_var );
-idx_huge = find( abs( this_data ) > 1e12 );
+idx_huge = find( abs( this_data ) > 1e5 );
 n_huge = numel( idx_huge );
-if ( n_huge <= 5 )
+if ( n_huge <= 20 )
     this_data( idx_huge ) = NaN;
 end
 if isnumeric( tbl.( this_var ) )
-    plot( axh, tbl.timestamp, this_data, '.k' );
+    % Trim viewed data to 98th prctile
+    %up = prctile( this_data, 98);
+    %lo = prctile( this_data, 1 );
+    %plot_idx = find( this_data < up & this_data > lo );
+    plot( axh, tbl.timestamp, this_data , '.k' );
     this_units = tbl.Properties.VariableUnits{ cur_col };
 else
     cla( axh );
 end
 
-if ( n_huge <= 5 ) & ( n_huge > 0 )
+if ( n_huge <= 20 ) & ( n_huge > 0 )
     t_str = sprintf( '%d extreme points (< or > 10^{12}) not shown', ...
                      numel( idx_huge ) );
     title( axh, t_str );
