@@ -1,4 +1,4 @@
-function [ vars, varargout ] = regexp_header_vars( arr, re )
+function [ vars, idx ] = regexp_header_vars( arr, re )
 % REGEXP_HEADER_VARS - returns cell array of strings of variable names
 % from table or dataset arr that match regular expression re
 %
@@ -30,4 +30,3 @@ elseif isa( arr, 'table' );
     vars = arr.Properties.VariableNames( idx );
 end
 
-varargout = { idx };
