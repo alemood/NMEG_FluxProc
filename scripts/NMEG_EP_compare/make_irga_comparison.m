@@ -44,13 +44,14 @@ args.parse( sitecode, varargin{ : } );
 % Get start date based on site
 switch char(sitecode)
     case 'SLand'
-        t_start = datenum([2015,12,16]);
+        t_start = datenum([2017,2,22]);
         [year_start,~,~,~,~,~] = datevec(t_start);
     case 'MCon_SS'
         t_start = datenum([2016,1,1]);
         [year_start,~,~,~,~,~] = datevec(t_start);
 end
 t_end = floor(now - 60);
+t_end = datenum([2017,3,21]);
 [year_end,~,~,~,~,~] = datevec(t_end);
 fprintf('Comparing %s IRGAs from %s to %s.\n',char(sitecode),datestr(t_start),datestr(t_end));
 
@@ -82,11 +83,12 @@ for i = 1:length(yearlist)
     T75 = vertcat(T75,all_data( : , myvars ));
 end
 
+% HARD CODED BALOGNE
 fname72 = fullfile( getenv('FLUXROOT'), 'FluxOut/ep_data/', ...
-        sprintf( '%s_closedpath_ep.mat', ...
+        sprintf( '%s_closedpath_ep_new_calibration.mat', ...
         char( sitecode ) ) );
-load(fname72);
-T72 = irga2(:,myvars);
+load( fname72 );
+T72 = all_data(:,myvars);
 
 T = outerjoin( T75, T72, 'Keys', 'timestamp','MergeKeys',true );
 
@@ -163,15 +165,17 @@ end
  statT =  grpstats(T,{'daytime_T72'},{'min','max','mean'});
  statT(:,1:5) = [];
  % Do some reshaping to print table to txt file
-
+ checkstats = statT;
  statT =  table2array(statT);
  nightstat = reshape(statT(1,(1:end)),3,30)';
  daystat = reshape(statT(2,(1:end)),3,30)';
  allstats = horzcat(nightstat,daystat);
  Tprint =array2table(allstats);
- Tprint.Properties.RowNames = T.Properties.VariableNames(3:end);
+ T.daytime_T72 = [];
+ Tprint.Properties.RowNames = T.Properties.VariableNames(2:end);
  Tprint.Properties.VariableNames = ...
      {'nightMin' 'nightMax' 'nightMean' 'dayMin' 'dayMax' 'dayMean'};
+ Tprint = sortrows(Tprint,'RowNames');
  writetable(Tprint, ...
      fullfile(getenv('FLUXROOT'),'QAQC_analyses',...
         strcat(char(sitecode),'_irga_compare_stats.csv')),...
@@ -185,7 +189,7 @@ end
 function handles = compare_cumulative_series( axis, tbl )
 
         tbl_vars = {'co2_flux_T75' 'co2_flux_T72'};
-        sc = -1; % GPP has a negative sign convention
+        %sc = -1; % GPP has a negative sign convention
             
         plot( tbl.timestamp, ...
             nan_cumsum( tbl.( tbl_vars{ 1 } )) * sc, '.k' );
