@@ -156,123 +156,123 @@ end
 
 % ============================== PLOTS =================================
 
-% if args.Results.draw_plots
-%     nrow = size( raw_swc, 1 );
-%     doy = ( 0:nrow-1 ) / 48;
-%     n_locations = size( raw_swc, 2 );  %how many measurment locations?
-% 
-%     if args.Results.save_plots
-%         file_name_list = cell( n_locations, 1 );
-%     end
-%     
-%     for  i = 1:n_locations
-%         h = figure( 'Name', 'SWC T corrections', ...
-%                     'Units', 'Inches', ...
-%                     'Position', [ 0, 0, 8.5, 11 ] );
-%         ax1 = subplot( 4, 1, 1 );
-%         h_vwc = plot( doy, vwc{ :, i }, '.b' );
-%         hold on
-%         h_vwc_tc = plot( doy, vwc{ :, i }, 'ok' );
-%         cov_num_depth = regexp( raw_swc_input.Properties.VariableNames{ i }, ...
-%                                 '_', 'split' );
-%         cov_num_depth = sprintf( 'VWC\\_%s\\_%s\\_%s', ...
-%                                  cov_num_depth{ 2 }, ...
-%                                  cov_num_depth{ 3 }, ...
-%                                  cov_num_depth{ 4 } );
-%         ylabel( 'VWC' );
-%         legend( [ h_vwc, h_vwc_tc ], 'not corrected', 'T-corrected', ...
-%                 'Location', 'best' );
-%         title( regexprep( cov_num_depth, '([0-9])p([0-9])', '$1.$2' ) );
-%         % % if all is well, all VWC values should be in range [0, 1].  Make the
-%         % % y-limits of the plot at least this big
-%         % y_lim = get( ax, 'YLim' );
-%         % if ( y_lim( 1 ) > 0 )
-%         %     y_lim( 1 )  = 0;
-%         % end
-%         % if ( y_lim( 2 ) < 1.0 )
-%         %     y_lim( 2 ) = 1.0;
-%         % end
-%         % set( ax, 'YLim', y_lim );
-%         
-%         subplot( 4, 1, 2 );
-%         d_vwc = table2array( vwc( :, i ) ) - table2array( vwc( :, i ) );
-%         d_vwc_percent = d_vwc ./ table2array( vwc( :, i ) );
-%         [ ax2, h_d_vwc, h_vwc_pct ] = plotyy( doy, d_vwc, ...
-%                                               doy, d_vwc_percent );        
-%         set( h_d_vwc, 'LineStyle', 'none', ...
-%                       'Marker', '.', 'MarkerEdgeColor', 'k' );
-%         set( h_vwc_pct, 'LineStyle', 'none', ...
-%                     'Marker', 'o', 'MarkerFaceColor', 'none', ...
-%                         'MarkerEdgeColor', 'b');
-%         align_axes_zeros( ax2( 1 ), ax2( 2 ) );
-%         ylabel( ax2( 1 ), '\Delta VWC [VWC]' );
-%         ylabel( ax2( 2 ), '% change VWC' );
-%         legend( [ h_d_vwc, h_vwc_pct ], ...
-%                 'VWC - VWC\_Tc', ...
-%                 '% change, VWC to VWC\_Tc', ...
-%                 'Location', 'best' );
-%         uistack( ax2( 1 ), 'top' ); % bring the delta VWC ax2is ax2(1) to the
-%                                    % front
-%         set( ax2( 1 ), 'Color', 'none', 'YColor', 'black' );
-%         set( ax2( 2 ), 'Color', 'white', 'YColor', 'blue' );
-%         
-%         ax3 = subplot( 4, 1, 3 );
-%         plot( doy, T_soil( :, i ), '.' );
-%         ylabel( 'Tsoil' );
-% 
-%         ax4 = subplot( 4, 1, 4 );
-%         plot( doy, raw_swc( :, i ), '.' );
-%         ylabel( 'raw SWC' );
-%         xlabel( 'day of year' )
-%         
-%         if ( args.Results.save_plots )
-%             % save plots as PNG images in temporary file, then combine to
-%             % multi-page PDF outside of this loop
-%             fdir = fullfile( tempdir(), ...
-%                              'SWC_Plots' );
-%             if not( exist( fdir ) )
-%                 mkdir( fdir );
-%             end
-%             fname = tempname( fdir );
-%             set( h, 'PaperPositionMode', 'auto' );
-%             print( h, '-dpng', fname );
-%             %figure_2_eps( h, fname );
-%             file_name_list{ i } = fname;
-%             close( h );
-%         else
-%             linkaxes( [ ax1, ax2( 1 ), ax2( 2 ), ax3, ax4 ], 'x' );
-%             waitfor( h );
-%             
-%         end
-%         
-%     end
-%     if args.Results.save_plots
-%         combined_dir = fullfile( getenv( 'PLOTS' ), 'SWC_Plots' );
-%         if not( exist( combined_dir ) )
-%             mkdir( combined_dir );
-%         end
-%         combined_fname = fullfile( combined_dir, ...
-%                                    sprintf( '%s_%d_VWC.pdf', ...
-%                                             char( UNM_sites(args.Results.sitecode)), ...
-%                                             args.Results.year ) );
-%         cmd = sprintf( [ 'gs -q -dNOPAUSE -dBATCH ', ...
-%                          '-sDEVICE=pdfwrite -sOutputFile=%s ' ], ...
-%                        combined_fname );
-%         for i = 1:numel( file_name_list )
-%             % convert png output to pdf so that ghostscript can combine to
-%             % single-file multi-page pdf
-%             convert_cmd = sprintf( 'convert %s.png %s.pdf', ...
-%                              file_name_list{ i },...
-%                              file_name_list{ i } );
-%             %fprintf( '%s\n',  convert_cmd );
-%             system( convert_cmd );
-%             cmd = sprintf( '%s %s.pdf', cmd, file_name_list{ i } );
-%         end
-%         % combine individual probe pdfs into single file
-%         system( cmd );
-%     end
-%         
-% end
+if args.Results.draw_plots
+    nrow = size( raw_swc, 1 );
+    doy = ( 0:nrow-1 ) / 48;
+    n_locations = size( raw_swc, 2 );  %how many measurment locations?
+
+    if args.Results.save_plots
+        file_name_list = cell( n_locations, 1 );
+    end
+    
+    for  i = 1:n_locations
+        h = figure( 'Name', 'SWC T corrections', ...
+                    'Units', 'Inches', ...
+                    'Position', [ 0, 0, 8.5, 11 ] );
+        ax1 = subplot( 4, 1, 1 );
+        h_vwc = plot( doy, vwc{ :, i }, '.b' );
+        hold on
+        h_vwc_tc = plot( doy, vwc{ :, i }, 'ok' );
+        cov_num_depth = regexp( raw_swc_input.Properties.VariableNames{ i }, ...
+                                '_', 'split' );
+        cov_num_depth = sprintf( 'VWC\\_%s\\_%s\\_%s', ...
+                                 cov_num_depth{ 2 }, ...
+                                 cov_num_depth{ 3 }, ...
+                                 cov_num_depth{ 4 } );
+        ylabel( 'VWC' );
+        legend( [ h_vwc, h_vwc_tc ], 'not corrected', 'T-corrected', ...
+                'Location', 'best' );
+        title( regexprep( cov_num_depth, '([0-9])p([0-9])', '$1.$2' ) );
+        % % if all is well, all VWC values should be in range [0, 1].  Make the
+        % % y-limits of the plot at least this big
+        % y_lim = get( ax, 'YLim' );
+        % if ( y_lim( 1 ) > 0 )
+        %     y_lim( 1 )  = 0;
+        % end
+        % if ( y_lim( 2 ) < 1.0 )
+        %     y_lim( 2 ) = 1.0;
+        % end
+        % set( ax, 'YLim', y_lim );
+        
+        subplot( 4, 1, 2 );
+        d_vwc = table2array( vwc( :, i ) ) - table2array( vwc( :, i ) );
+        d_vwc_percent = d_vwc ./ table2array( vwc( :, i ) );
+        [ ax2, h_d_vwc, h_vwc_pct ] = plotyy( doy, d_vwc, ...
+                                              doy, d_vwc_percent );        
+        set( h_d_vwc, 'LineStyle', 'none', ...
+                      'Marker', '.', 'MarkerEdgeColor', 'k' );
+        set( h_vwc_pct, 'LineStyle', 'none', ...
+                    'Marker', 'o', 'MarkerFaceColor', 'none', ...
+                        'MarkerEdgeColor', 'b');
+        align_axes_zeros( ax2( 1 ), ax2( 2 ) );
+        ylabel( ax2( 1 ), '\Delta VWC [VWC]' );
+        ylabel( ax2( 2 ), '% change VWC' );
+        legend( [ h_d_vwc, h_vwc_pct ], ...
+                'VWC - VWC\_Tc', ...
+                '% change, VWC to VWC\_Tc', ...
+                'Location', 'best' );
+        uistack( ax2( 1 ), 'top' ); % bring the delta VWC ax2is ax2(1) to the
+                                   % front
+        set( ax2( 1 ), 'Color', 'none', 'YColor', 'black' );
+        set( ax2( 2 ), 'Color', 'white', 'YColor', 'blue' );
+        
+        ax3 = subplot( 4, 1, 3 );
+        plot( doy, T_soil( :, i ), '.' );
+        ylabel( 'Tsoil' );
+
+        ax4 = subplot( 4, 1, 4 );
+        plot( doy, raw_swc( :, i ), '.' );
+        ylabel( 'raw SWC' );
+        xlabel( 'day of year' )
+        
+        if ( args.Results.save_plots )
+            % save plots as PNG images in temporary file, then combine to
+            % multi-page PDF outside of this loop
+            fdir = fullfile( tempdir(), ...
+                             'SWC_Plots' );
+            if not( exist( fdir ) )
+                mkdir( fdir );
+            end
+            fname = tempname( fdir );
+            set( h, 'PaperPositionMode', 'auto' );
+            print( h, '-dpng', fname );
+            %figure_2_eps( h, fname );
+            file_name_list{ i } = fname;
+            close( h );
+        else
+            linkaxes( [ ax1, ax2( 1 ), ax2( 2 ), ax3, ax4 ], 'x' );
+            waitfor( h );
+            
+        end
+        
+    end
+    if args.Results.save_plots
+        combined_dir = fullfile( getenv( 'PLOTS' ), 'SWC_Plots' );
+        if not( exist( combined_dir ) )
+            mkdir( combined_dir );
+        end
+        combined_fname = fullfile( combined_dir, ...
+                                   sprintf( '%s_%d_VWC.pdf', ...
+                                            char( UNM_sites(args.Results.sitecode)), ...
+                                            args.Results.year ) );
+        cmd = sprintf( [ 'gs -q -dNOPAUSE -dBATCH ', ...
+                         '-sDEVICE=pdfwrite -sOutputFile=%s ' ], ...
+                       combined_fname );
+        for i = 1:numel( file_name_list )
+            % convert png output to pdf so that ghostscript can combine to
+            % single-file multi-page pdf
+            convert_cmd = sprintf( 'convert %s.png %s.pdf', ...
+                             file_name_list{ i },...
+                             file_name_list{ i } );
+            %fprintf( '%s\n',  convert_cmd );
+            system( convert_cmd );
+            cmd = sprintf( '%s %s.pdf', cmd, file_name_list{ i } );
+        end
+        % combine individual probe pdfs into single file
+        system( cmd );
+    end
+        
+end
 
 
 %=================================================================
