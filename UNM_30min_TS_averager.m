@@ -258,4 +258,4 @@ y_units = [ y_units, { 'm/s' } ];
 
 y.Properties.Units = y_units;
 
-ds_out = y;
+ds_out = dataset2table(y);
