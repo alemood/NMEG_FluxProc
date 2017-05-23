@@ -27,6 +27,8 @@ function precip_t = total_precip_calculator( t )
 % Initialize some universal variables
 
  tol = 0.254; % precision of ETI NOAH II in mm to screen out noise in stable conditions (+/- 0.01 inches)
+ plotfig = true;
+ colors = { '.r', '.m', '.b', '.y', '.g', '.c' };
 % Load precip table
 % load(fullfile(getenv('FLUXROOT'),'NOAH_II_precip.mat'));
  
@@ -75,15 +77,37 @@ function precip_t = total_precip_calculator( t )
  %drained while it is raining, it should be OK. CR1000 program should
  %account for drains.
  neg_idx = find(dz < 0 );
+ if plotfig
+     ax(1) = subplot(4,1,1);
+     plot(t2.timestamp,dz,'.');
+     title('raw dz')
+ end
   % Align diffs to t_(i+1). First time step will be 0
  dz(neg_idx) = 0;
+  if plotfig
+     ax(2) = subplot(4,1,2);
+     plot(t2.timestamp,dz,'.');
+       title(' > 0')
+ end
  
  dz(find(~isfinite(dz))) = 0;
  
  %NOAH II accuracy is +/- 0.01" or 0.254 mm
  dz(find( dz < tol)) = 0;
-
- dz(find( dz > 10 * nanstd(dz))) = 0;
+ if plotfig
+     ax(3) = subplot(4,1,3);
+     plot(t2.timestamp,dz,'.');
+      title('>0 , > 0.254 mm')
+ end
+ dz(find( dz > 8 * nanstd(dz))) = 0;
+ dz(find( dz > 10 ) ) = 0;
+ if plotfig
+     ax(4) = subplot(4,1,4);
+     plot(t2.timestamp,dz,'.');
+     title('> 0 , > 0.254 mm, < 5 \sigma')
+ end
+ linkaxes(ax,'x')
+ dynamicDateTicks(ax,'linked')
  % Create a new table with 'tipping bucket' measurements
  t2 = [t2 array2table(dz)];
 
@@ -123,6 +147,19 @@ precip_t= [ts_30min', precip_mm30min',(precip_mm30min.*corr)',corr'];
 var_names ={'timestamp','precip','precip_corr', 'corr'};
 precip_t = array2table(precip_t,'VariableNames', var_names);
 
+if plotfig
+    figure;
+    ax2(1) = subplot(2,1,1); 
+        plot(precip_t.timestamp,[precip_t.precip,precip_t.precip_corr],'.')
+        ylabel('mm/5min')
+    ax2(2) = subplot(2,1,2); 
+         plot(precip_t.timestamp,[cumsum(precip_t.precip),cumsum(precip_t.precip_corr)])
+         ylabel('mm')
+         title(['Cumulative precip = ', num2str(max(cumsum(precip_t.precip_corr))), ' mm',...
+             '/',  num2str(max(cumsum(precip_t.precip_corr))/25.4), ' in' ] ) 
+         linkaxes(ax2,'x')
+         dynamicDateTicks(ax2,'linked')
+end
 end
   
  % Plot of corrections
