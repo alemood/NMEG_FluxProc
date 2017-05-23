@@ -111,11 +111,18 @@ if strcmp(args.Results.data_location , 'wireless' )
     fprintf(' Last wireless download occured %s\n', char( remote_dir.date( idx )))
     % If it wasn't downloaded today, download
     if (floor(now)-floor(ts_last_dl)) ~= 0  % should be 0 if last download was from the previous day
-    fprintf(' Downloading all dataloggers from Socrro.\n')
-    remote_loc = harvest_sftp( this_site ); %FIX ME. Remote_loc is not necesary
+        fprintf(' Downloading all dataloggers from Socorro.\n')
+        append_status = true;
+        remote_loc = harvest_sftp( this_site ); %FIX ME. Remote_loc is not necessary
+        % If the directory is empty, download
+    elseif isempty( remote_dir )
+        fprintf(' Downloading all dataloggers from Socorro.\n')
+        remote_loc = harvest_sftp( this_site );
+        append_status = true;
     else
-    fprintf(' Most recent download was today. Skipping wireless download\n') 
-    data_location = fullfile(get_site_directory(this_site),'wireless_data');
+        fprintf(' Most recent download was today. Skipping wireless download\n')
+        data_location = fullfile(get_site_directory(this_site),'wireless_data');
+        append_status = 0 ;
         
     end
 end
@@ -180,25 +187,26 @@ first_tokens = unique( first_tokens );
 if length( first_tokens )==1 && strcmp( first_tokens, num2str(dl_conf.ID))
     fprintf( 'Card file IDs (%s) match configured datalogger.\n', ...
         first_tokens{1} )
-elseif  dl_wireless
-    %Find just the flux table and change file name to fileID.flux|ts_data
-    %FIXME - This is MESSY and may not work if there are more than 2 files in dir. 
+elseif  strcmpi(args.Results.data_location,'wireless')
+    % Find just the flux table and change file name to fileID.flux|ts_data
+    % FIXME - This is MESSY and may not work if there are more than 2 files in dir. 
+    % FIXME = Considering ditching this. First, append toa5 data to 
     fileID = conf.dataloggers.ID;
-    flux_tokens = cellfun( @(x) regexp(x{1},'NMUFN.*.flux','match'),...
-         fname_tokens, 'UniformOutput', false );
-    flux_tokens{~cellfun(@isempty,flux_tokens)};
-    [copy_succes,msg,msgid] = copyfile(...
-        fullfile(data_location,strcat(char(flux_tokens{1}),'.dat')),...
-        fullfile(data_location,[num2str(fileID),'.flux.dat']));
-    delete(fullfile(data_location,strcat(char(flux_tokens{1}),'.dat')));
-    % Just the 10hz
-    ts_tokens = cellfun( @(x) regexp(x{1},'NMUFN.*.ts_data','match'),...
-        fname_tokens, 'UniformOutput', false );
-    ts_tokens{~cellfun(@isempty,ts_tokens)};
-    [copy_succes,msg,msgid] = copyfile(...
-        fullfile(data_location,strcat(char(ts_tokens{2}),'.dat')),...
-        fullfile(data_location,[num2str(fileID),'.ts_data.dat']));
-    delete( fullfile(data_location,strcat(char(ts_tokens{2}),'.dat')));
+%     flux_tokens = cellfun( @(x) regexp(x{1},'NMUFN.*.flux','match'),...
+%          fname_tokens, 'UniformOutput', false );
+%     flux_tokens  = flux_tokens{~cellfun(@isempty,flux_tokens)};
+%     [copy_succes,msg,msgid] = copyfile(...
+%         fullfile(data_location,strcat(char(flux_tokens{1}),'.dat')),...
+%         fullfile(data_location,[num2str(fileID),'.flux.dat']));
+%    % delete(fullfile(data_location,strcat(char(flux_tokens{1}),'.dat')));
+%     % Just the 10hz
+%     ts_tokens = cellfun( @(x) regexp(x{1},'NMUFN.*.ts_data','match'),...
+%         fname_tokens, 'UniformOutput', false );
+%     ts_tokens = ts_tokens{~cellfun(@isempty,ts_tokens)};
+%     [copy_succes,msg,msgid] = copyfile(...
+%         fullfile(data_location,strcat(char(ts_tokens{2}),'.dat')),...
+%         fullfile(data_location,[num2str(fileID),'.ts_data.dat']));
+   % delete( fullfile(data_location,strcat(char(ts_tokens{2}),'.dat')));
  
      % rename to use fileID similar to card data
    
@@ -210,39 +218,61 @@ end
 %--------------------------------------------------------------------------
 % copy the data from the card to the computer's hard drive
 % 
-try    
-    fprintf(1, '\n----------\n');
-    fprintf(1, 'COPYING FROM CARD TO LOCAL DISK...\n');
-    [card_copy_success, raw_data_dir] = retrieve_card_data_from_loc( ...
-        this_site, logger_name, data_location, last_mod_date );
-catch err
-    % echo the error message
-    fprintf( 'Error copying raw data from card to local drive.' )
-    disp( getReport( err ) );
-    main_success = 0;
-    % if copying the data was unsuccessful there is nothing to do, so return
-    diary off
-    return
+if strcmpi( args.Results.data_location, 'card' )
+    try
+        fprintf(1, '\n----------\n');
+        fprintf(1, 'COPYING FROM CARD TO LOCAL DISK...\n');
+        [card_copy_success, raw_data_dir] = retrieve_card_data_from_loc( ...
+            this_site, logger_name, data_location, last_mod_date );
+    catch err
+        % echo the error message
+        fprintf( 'Error copying raw data from card to local drive.' )
+        disp( getReport( err ) );
+        main_success = 0;
+        % if copying the data was unsuccessful there is nothing to do, so return
+        diary off
+        return
+    end
 end
 
 % If this is a flux datalogger card convert the data
-if strcmp( logger_name, 'flux' )
-    % Check to see if data is from wireless. If so, change file names to
-    % end in .flux or .ts_data
-    
+if strcmp( logger_name, 'flux' )    
     % convert the thirty-minute data to TOA5 file
-    try
-        fprintf(1, '\n----------\n');
-        fprintf(1, 'CONVERTING THIRTY-MINUTE DATA TO TOA5 FORMAT...\n');
-        [fluxdata_convert_success, toa5_fname] = thirty_min_2_TOA5(...
-            this_site, raw_data_dir);
-        fprintf(1, ' Done\n');
-    catch err
-        fluxdata_convert_success = false;
-        % echo the error message
-        fprintf( 'Error converting 30-minute data to TOA5 file.' )
-        disp( getReport( err ) );
-        main_success = 0;
+    % Wireless data do not need converting
+    switch args.Results.data_location
+        case 'card'     
+            try
+                fprintf(1, '\n----------\n');
+                fprintf(1, 'CONVERTING THIRTY-MINUTE DATA TO TOA5 FORMAT...\n');
+                [fluxdata_convert_success, toa5_fname] = thirty_min_2_TOA5(...
+                    this_site, raw_data_dir);
+                fprintf(1, ' Done\n');
+            catch err
+                fluxdata_convert_success = false;
+                % echo the error message
+                fprintf( 'Error converting 30-minute data to TOA5 file.' )
+                disp( getReport( err ) );
+                main_success = 0;
+            end   
+            % Wireless TOA5 files need to be appended to previous card
+            % derived TOA5 file
+        case 'wireless'
+            try
+                fprintf( 1,  '\n----------\n');
+                fprintf(1, ...
+                    'APPENDING WIRELESS THIRTY-MINUTE DATA TO PREVIOUS TOA5 FILE...\n');
+                wireless_flux_file = ...
+                   fullfile( get_site_directory( this_site ) , ...
+                   'wireless_data', [first_tokens{1},'.dat'] );
+                [ fluxdata_convert_success, toa5_fname ] = ...
+                    append_current_toa5_file( this_site, wireless_flux_file , append_status ) ;
+            catch err
+                fluxdata_convert_success = false;
+                % echo the error message
+                fprintf( 'Error appending wireless 30-minute data to TOA5 file.' )
+                disp( getReport( err ) );
+                main_success = 0;
+            end
     end
     
     %make diagnostic plots of the raw flux data from the card
@@ -262,25 +292,46 @@ if strcmp( logger_name, 'flux' )
     end
     
     %convert the time series (10 hz) data to TOB1 files
-    try
-        fprintf(1, '\n----------\n');
-        fprintf(1, 'CONVERTING TIME SERIES DATA TO TOB1 FILES...\n');
-        [tsdata_convert_success, ts_data_fnames] = ...
-            tsdata_2_TOB1(this_site, raw_data_dir);
-        fprintf(1, ' Done\n');
-    catch err
-        % echo the error report
-        fprintf( 'Error converting time series data to TOB1 files.' )
-        disp( getReport( err ) );
-        main_success = 0;
-        if not( main_success )
-            % if neither data file was converted successfully, exit
-            fprintf( 'stopping logging... ' );
-            diary off
-            fprintf( 'logging stopped\n' );
-            return
-        end
-    end
+    switch args.Results.data_location
+        case 'card'
+            try
+                fprintf(1, '\n----------\n');
+                fprintf(1, 'CONVERTING TIME SERIES DATA TO TOB1 FILES...\n');
+                [tsdata_convert_success, ts_data_fnames] = ...
+                    tsdata_2_TOB1(this_site, raw_data_dir);
+                fprintf(1, ' Done\n');
+            catch err
+                % echo the error report
+                fprintf( 'Error converting time series data to TOB1 files.' )
+                disp( getReport( err ) );
+                main_success = 0;
+                if not( main_success )
+                    % if neither data file was converted successfully, exit
+                    fprintf( 'stopping logging... ' );
+                    diary off
+                    fprintf( 'logging stopped\n' );
+                    return
+                end
+            end % Convert TOB1
+        case 'wireless'
+            try
+                fprintf(1, '\n----------\n');
+                fprintf(1, 'CONVERTING WIRELESS TIME SERIES DATA TO TOB1 FILES...\n');
+                [tsdata_convert_success, ts_data_fnames] = ...
+                    tsdata_2_TOB1(this_site, data_location, 'wireless',true);
+            catch err
+                fprintf( 'Error converting time series data to TOB1 files.' )
+                disp( getReport( err ) );
+                main_success = 0;
+                if not( main_success )
+                    % if neither data file was converted successfully, exit
+                    fprintf( 'stopping logging... ' );
+                    diary off
+                    fprintf( 'logging stopped\n' );
+                    return
+                end
+            end
+    end % Switch data location
 end
 
 % If this is a secondary logger, convert the data
@@ -329,6 +380,7 @@ end
 % end
 
 %compress the raw data on the local drive
+if strcmpi(args.Results.data_location,'card')
 try
     fprintf(1, '\n----------\n');
     fprintf(1, 'COMPRESSING RAW DATA ON INTERNAL DRIVE...\n');
@@ -374,7 +426,7 @@ catch err
     disp( getReport( err ) );
     fprintf( 'continuing with processing\n' );
 end
-
+end
 % This saves the MATLAB environment so that it can be restarted in case
 % something bad happens
 save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', ['card_restart_',char(UNM_sites(this_site)),'01.mat'] ) );
