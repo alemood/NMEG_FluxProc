@@ -95,10 +95,10 @@ eddypro_exe = fullfile('C:','"Program Files (x86)"',...
 eddypro_cmd = [eddypro_exe,' ',eddypro_proj];
 
 
-tic
+
 fprintf( '---------- processing in EddyPro ----------\n' );
 [ep_status ep_result]=system(eddypro_cmd)    %Run EddyPro. May need to change environment
-toc
+
 
 %Get list of full_output eddypro files in site dir
 if ep_status == 0
