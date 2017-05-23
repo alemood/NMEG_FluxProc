@@ -359,6 +359,8 @@ switch sitecode
                 lw_outgoing(idx) ./ cnr1_mult_old .* cnr1_mult;
             % Calibration for par-lite
             Par_Avg(idx) = Par_Avg(idx) .* PAR_KZ_old_up_mult;
+            
+            % Par_Avg
             % Temperature correction for long-wave
             % FIXME - start using CG3CO variables?
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing );
@@ -388,6 +390,9 @@ switch sitecode
         % This multiplier (103.199) appears correct in datalogger program
         
         % PAR multipliers - see the current datalogger program
+        PAR_KZ_AMP_calibrated_up = 7.929; % From highly calibrated ameriflux PAR
+        PAR_KZ_AMP_calibrated_down = 7.161;% March 2014
+        % Multiply by ratio of new/AMP calibrated (9.06 /7.929)
         PAR_KZ_new_up_sens = 9.06; % New Par_lite sensor
         PAR_KZ_old_up_sens = 5.51; % Older Par_lite
         PAR_KZ_dn_sens = 8.48; % Par_lite down
@@ -455,17 +460,32 @@ switch sitecode
             % Calibrate par-lite installed on 2/11/08
             Par_Avg(find(decimal_day < 10.6)) = ...
                 Par_Avg(find(decimal_day < 10.6)) .* PAR_KZ_old_up_mult;
+            
+            % 6/18/2014 , new par sensors installed. 
+           idx = find( decimal_day > 169.1875 ) ;
+           Par_Avg( idx ) = Par_Avg (idx ) * (PAR_KZ_new_up_sens / PAR_KZ_AMP_calibrated_up) ;
 
             % Entire year needs lw temperature correction - GEM
             % FIXME - start using CG3CO vars?
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
         elseif year_arg == 2015
+            
+            % Fixing bad calibration value
+            Par_Avg = Par_Avg * (PAR_KZ_new_up_sens / PAR_KZ_AMP_calibrated_up);
             % FIXME - start using CG3CO vars?
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
         elseif year_arg == 2016;
+             
+            % Fixing bad calibration value
+            Par_Avg = Par_Avg * (PAR_KZ_new_up_sens / PAR_KZ_AMP_calibrated_up);
             % FIXME - drop and use CG3CO vars?
-            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );    
-          
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );   
+        elseif year_arg == 2017;
+            % 6/18/2014 , new par sensors installed. 
+            idx = find( decimal_day < 121 ) ;
+            Par_Avg( idx ) = Par_Avg (idx ) * (PAR_KZ_new_up_sens / PAR_KZ_AMP_calibrated_up) ;
+
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );   
         end
         
         %%%%%%%%%%%%%%%%% pj girdle
