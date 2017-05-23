@@ -116,7 +116,12 @@ for i = 1:length( fillVars )
             'There is not enough ancillary met data available \n' ...
             'Filled file not written. \n' ]);
         result = 1;
-        error( 'Met gapfilling failed' );
+       if year == this_year
+           warning('One or more ancillary data failed to parse');
+       else
+           error( 'Met gapfilling failed' );
+       end
+        
     end
     
     % Combine the two filled indices into one ( used for recalcVPD )

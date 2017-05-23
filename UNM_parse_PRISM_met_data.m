@@ -39,7 +39,14 @@ precipDataT = precipDataT( : , { 'date',  siteID });
 precipDataT.Properties.VariableNames{ siteID } = 'Precip';
 
 % Add a timestamp
-precipDataT.timestamp = datenum( precipDataT.date, 'yyyy-mm-dd' );
+% In 2017a, a datetime object was introduced that messes with datenum in
+% this context
+if strcmpi( version('-release'),'2017a')
+     precipDataT.timestamp = ...
+         datenum( datestr(precipDataT.date,'yyyy-mm-dd'), 'yyyy-mm-dd' );
+else
+    precipDataT.timestamp = datenum( precipDataT.date, 'yyyy-mm-dd' );
+end
 
 
 
