@@ -1,4 +1,7 @@
 % Sets paths in fluxproc directory
+runKernelsRegr =true;
+runUncertainty = false;
+
 if ~isempty( regexpi( pwd, 'FluxProc' ) )
     fprintf( 'Setting paths for FluxProc...\n' );
     addpath( genpath(fullfile( pwd, 'scripts' )))
@@ -11,6 +14,14 @@ else
     error( 'Present directory not a FluxProc directory!' );
 end
 
+
+if runUncertainty
+    addpath(genpath('Keenan_uncertainty'));
+end
+
+if runKernelsRegr 
+    addpath( genpath('KernelRegressions'))
+end
 % Moved to ./m_utils/
 %addpath('/home/greg/current/MatlabFluxUtilities/')
 % Moved to ./m_exchange_utils/
