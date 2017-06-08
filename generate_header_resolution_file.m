@@ -150,6 +150,10 @@ if exist( sensorSwapsFile, 'file' )
     swapflag = 1;
     % Read in the sensor swaps file
     swaps = readtable( sensorSwapsFile );
+    if isdatetime(swaps.first)
+        swaps.first = datestr(swaps.first,'YYYY-mm-DD HH:MM');
+        swaps.last = datestr(swaps.last,'YYYY-mm-DD HH:MM');
+    end
 end
 
 %Check for sensor rename file and open if found
