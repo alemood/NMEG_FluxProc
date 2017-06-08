@@ -55,12 +55,12 @@ combined_t_cell = table2cell( combined_t );
 fid = fopen(toa5_fname,'w+');
 for i = 1:4
     n_fields = numel( headerlines{ i } );
-    hfmt = repmat( '%s,', 1, n_fields );
+    hfmt = [repmat( '%s,', 1, n_fields  - 1 ),'%s'];
     C = [headerlines{i}];
     fprintf( fid, [hfmt,'\n'], C{ 1 , : } );
 end
 % Data
-dfmt = repmat( '%s,', 1 , width(combined_t) );
+dfmt = [repmat( '%s,', 1 , width(combined_t) - 1 ), '%s' ];
 for i = 1:height(combined_t);
     C = cellfun(@(x) num2str(x,8),combined_t_cell(i,:),'Uniformoutput',false);
     fprintf( fid, [dfmt,'\n'], C{1,:});
