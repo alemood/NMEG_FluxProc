@@ -84,6 +84,16 @@ if args.Results.sitecode == UNM_sites.PPine
           ( aflx_data.DTIME < 195 );
     aflx_data.RECO( idx ) = aflx_data.RECO( idx ) * 0.5;
     aflx_data.FC_F( idx ) = aflx_data.RECO( idx ) - aflx_data.GPP( idx );
+elseif args.Results.sitecode == UNM_sites.MCon
+    fprintf('REMOVING GAPFILLED FLUXES DURING MCON FIRE O_o')
+    idx = aflx_data.timestamp >= datenum( 2013,6,1) & ...
+            aflx_data.timestamp <= datenum( 2013, 12,31 );
+    aflx_data.RECO( idx ) = NaN;
+    aflx_data.FC_F( idx ) = NaN;
+    aflx_data.GPP( idx ) = NaN;
+    aflx_data.LE_F( idx) = NaN;
+    aflx_data.SW_IN_F(idx) = NaN;
+    
 end
 
 %convert C fluxes to gC / m2
