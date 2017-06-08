@@ -32,6 +32,8 @@ args = args.Results;
 
 sitecode = args.sitecode;
 years = args.years;
+
+soil = false;
 if strcmpi(args.suffix,'soil')
     soil = true;
 end

@@ -766,7 +766,7 @@ switch sitecode
 end
 
 %=============== Calculate Soil Heat Flux from HFP01s ==================
-calc_shf = false;
+calc_shf = true;
 if calc_shf
 fprintf('-------Calculating SHF and storage @ %s -----\n',char(sitecode))
 

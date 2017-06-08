@@ -4,10 +4,10 @@ sitelist =     { UNM_sites.PJ, UNM_sites.PJ_girdle,...
     UNM_sites.PPine, UNM_sites.MCon};
 sitelist = {UNM_sites.MCon};
 
-releasename = 'FLUXNET2015_b\NMEG';
+releasename = 'FLUXNET2015_c';
 path_to_aflx = fullfile(getenv('FLUXROOT'),'Ameriflux_files',releasename);
 
-years = 2007:2016;
+years = 2010:2016;
 
 for i = 1:length(sitelist);
     % Get site code

@@ -74,7 +74,7 @@ mylim1 = [prctile(vertcat(var1,var2),.1) prctile(vertcat(var1,var2),99.9)];
 ylim( mylim1 );
 title( fig_name  );
 datetick( 'x' , 2 );
-legend(var1name,var2name,'best')
+legend(var1name,var2name, 'Location','best'  )
 
 axes( ax_tsdiff );
 h_tsdiff = plot( ts, var1 - var2);
@@ -114,18 +114,20 @@ refline(1)
 
 
 % Try to remove extreme residuals to make a worthwhile histogram
-o.residuals = o.residuals(o.residuals > prctile(o.residuals,0.05) & ...
-    o.residuals < prctile(o.residuals,0.95));
+% o.residuals = o.residuals(o.residuals > prctile(o.residuals,0.05) & ...
+%     o.residuals < prctile(o.residuals,0.95));
 [count x] = hist( o.residuals, 20);
 axes (ax_hist);
 bar(x, count/sum(count));
     ylabel('\it{freq}')
     x=get(gca,'xlim');
     y=get(gca,'ylim');
-    text(x(1)+5,y(2)*.9,[ 'mean=' , num2str( nanmean( o.residuals ) ) ] ) ;
-    text(x(1)+5,y(2)*.85,[ 'median=' , num2str( nanmedian( o.residuals ) ) ] ) ;
-    text(x(1)+5,y(2)*.75,[ 'std=' , num2str( nanstd( o.residuals ) ) ] ) ;
-
+%     title(sprintf('mean= %1.3f,med= %1.3,std= %1.3f' ,  nanmean( o.residuals ) ,nanmedian( o.residuals ),nanstd( o.residuals ) ) );
+%     text(x(1)+5,y(2)*.92,sprintf('mean= %1.3f' ,  nanmean( o.residuals )   ) ) ;
+%     text(x(1)+5,y(2)*.82,sprintf('median= %1.3f' ,  nanmedian( o.residuals )   ) ) ;
+%     text(x(1)+5,y(2)*.72,sprintf('std= %1.3f' ,  nanstd( o.residuals )  ) )
+     xlabel(sprintf('mean= %1.3f med= %1.3f \n std= %1.3f' ,  nanmean( o.residuals ) ,nanmedian( o.residuals ),nanstd( o.residuals ) ) ,...
+         'FontSize',8);
 
 % -------
 % qqplot

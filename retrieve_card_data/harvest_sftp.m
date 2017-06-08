@@ -38,7 +38,7 @@ conf = parse_yaml_config( sitecode, 'Dataloggers',...
 conf = struct2table(conf.dataloggers);
 
 remote_site_dir = ['/net/ladron/export/db/work/wireless/nmufn/',...
-    lower(char( UNM_sites(sitecode)))];...
+    strrep(lower(char( UNM_sites(sitecode))),'_','')];...
 
 %--------
 % Switch site prefix on SFTP. VC sites have VCNP prefix
@@ -59,7 +59,7 @@ for i = 1:numel(loggers)
         switch fmt
             case 'TOA5' 
                 remote_file = [site_prefix,...
-                    upper(char( UNM_sites( sitecode ))),...
+                    upper(strrep(char( UNM_sites( sitecode )),'_','')),...
                     '_',char(conf(i,:).make),'_flux.dat'];
             case 'TOB1'
                 remote_file = [site_prefix,...
@@ -73,7 +73,7 @@ for i = 1:numel(loggers)
         % DOWNLOAD FROM SFTP
         ssh2_conn = scp_simple_get('socorro.unm.edu', 'eddyflux','ravafru8',... %Server info
             [remote_site_dir,remote_file],...                                   % File to retrieve
-            fullfile(getenv('FLUXROOT'),'SiteData',char(UNM_sites(sitecode)),'wireless_data')); %Destination
+            fullfile( getenv('FLUXROOT'),'SiteData',char(UNM_sites(sitecode)),'wireless_data')); %Destination
     end
 end
 

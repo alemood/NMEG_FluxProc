@@ -34,18 +34,20 @@ meanET_t = array2table(yearlist','VariableNames',{'wyear'});
 meanP_t =  array2table(yearlist','VariableNames',{'wyear'});
 meanETSE_t = array2table(yearlist','VariableNames',{'wyear'});
 meanPSE_t = array2table(yearlist','VariableNames',{'wyear'});
+%%
 for i = 1:length(sitelist)
     
-    site = all_data(i).site;
-    data = all_data(i).data;
+    site = all_data{i,1};
+    data = all_data{i,2};
     
     % Calculate yearly means
-    [uniqueYears,idxToUnique,idxFromUniqueBackToAll] = unique(data.wyear);
+    [uniqueYears,idxToUnique,idxFromUniqueBackToAll] = unique(data.hydroyear);
     yearlyMeanET = horzcat(uniqueYears ,accumarray(idxFromUniqueBackToAll,data.ET_mm_dayint,[],@nanmean));
     yearlyMeanET = array2table(yearlyMeanET,'VariableNames',{'wyear',site});
     meanET_t = outerjoin(meanET_t,yearlyMeanET,'MergeKeys',true);
     
-    yearlyMeanP =  horzcat(uniqueYears ,accumarray(idxFromUniqueBackToAll,data.P_F_sum,[],@nanmean) );
+
+    yearlyMeanP =  horzcat(uniqueYears ,accumarray(idxFromUniqueBackToAll,data.PRECIP,[],@nanmean) );
     yearlyMeanP =  array2table(yearlyMeanP,'VariableNames',{'wyear',site});
     meanP_t = outerjoin(meanP_t,yearlyMeanP,'MergeKeys',true)   ;
     
@@ -54,20 +56,21 @@ for i = 1:length(sitelist)
     yearlyMeanETSE = array2table(yearlyMeanETSE,'VariableNames',{'wyear',site});
     meanETSE_t = outerjoin(meanETSE_t,yearlyMeanETSE,'MergeKeys',true);
     
-    yearlyMeanPSE =  horzcat(uniqueYears ,accumarray(idxFromUniqueBackToAll,data.P_F_sum,[],@nanstd) );
+    yearlyMeanPSE =  horzcat(uniqueYears ,accumarray(idxFromUniqueBackToAll,data.PRECIP,[],@nanstd) );
     yearlyMeanPSE =  array2table(yearlyMeanPSE,'VariableNames',{'wyear',site});
     meanPSE_t = outerjoin(meanPSE_t,yearlyMeanPSE,'MergeKeys',true)   ;
 end
 
 ETPratio = [  meanET_t{:,2:end}./meanP_t{:,2:end}];
-ETPratio = array2table(ETPratio,'VariableNames',sitelist) 
+ETPratio = array2table(ETPratio,'VariableNames',sitelist,'RowNames',cellstr(num2str(yearlist'))) 
 
+%%
 % We only have a partial (272/365 days)  water year for 2006. Scale by
 % portion of the year?
 
 
 c = categorical(meanP_t.Properties.VariableNames(2:end));
-for i = 1: length(yearlist)
+for i = 2: length(yearlist - 1) % To exlude 2006 and 2016, incomplete wate years
    
     year = meanP_t{i,1};
    
@@ -93,12 +96,12 @@ for i = 1: length(yearlist)
     
     destfile = fullfile(getenv('FLUXROOT'),'Plots',...
         'NMWRRI_ET',sprintf('MeanAnnualETP_%d',year));
-    saveas( gcf , destfile, 'png')
+  %  saveas( gcf , destfile, 'png')
     %hold off
 end
 
 % ----------- Mean annual ET/P ratio
-ETPratio = [  meanET_t{:,2:end}./meanP_t{:,2:end}];
+ETPratio = [  meanET_t{2:9,2:end}./meanP_t{2:9,2:end}];
 
 gcolour=[0.9,0.5,0.0];
 ngcolour= [0.9, 0.8, 0.0];
@@ -112,7 +115,7 @@ nmcolour=[0.3, 0.0, 0.5];
 
 figure2 = figure('Position',[1 550 1906 525]);
 bar2 = bar(ETPratio);
-set(gca,'XTickLabel',yearlist,'YGrid','on');
+set(gca,'XTickLabel',yearlist(2:9),'YGrid','on');
 %set(gca,'YLim',[0 2.5])
 set(bar2(1),'FaceColor',gcolour,'DisplayName','Seg')
 set(bar2(2),'FaceColor',scolour,'DisplayName','Ses');
