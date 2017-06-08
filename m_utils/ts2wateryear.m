@@ -20,8 +20,8 @@ yearvec = unique(year);
 for j = 1:length(yearvec)
     wy_idx = find( ts <= datenum( yearvec(j) , 9 , 30) & ...
         ts >= datenum( yearvec(j) - 1 , 10, 1) );
-    wateryear(wy_idx) = yearvec(j) - 1  ;
+    wateryear(wy_idx) = yearvec(j);
 end
 
 % Find the water year decimal DOY
-wyDOY =  ts - datenum(  wateryear, 10, 1 ) + 1;
+wyDOY =  ts - datenum(  wateryear, 10, 0 ) + day;
