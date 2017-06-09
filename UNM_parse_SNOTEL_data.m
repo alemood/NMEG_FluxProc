@@ -62,9 +62,11 @@ metTable.Precip = p_diff;
 % metTable = metTable( met_data_T.year == year, : );
 
 % Add a timestamp
-metTable.timestamp = datenum( metTable.Date, 'yyyy-mm-dd' );
-
-
+if verLessThan('matlab','9.2.0')
+metTable.timestamp = datenum( metTable.Date, 'yyyy-mm-dd' );   
+else
+metTable.timestamp = datenum( metTable.Date); 
+end
 
 
 
