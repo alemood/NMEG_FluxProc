@@ -194,6 +194,11 @@ switch sitecode
                 
             %case { 2009, 2010, 2011, 2012, 2013, 2014, 2015 }
             %    data = shift_data( data, 0.5, allCols );
+            case 2017
+                clockSet1 =  5831:7632;
+                data( clockSet1, : ) = shift_data( ...
+                    data( clockSet1, : ), 36.5, allCols );
+                
         end
         
     case { UNM_sites.PJ , UNM_sites.TestSite }
