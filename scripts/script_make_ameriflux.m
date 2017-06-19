@@ -8,10 +8,12 @@
 % Years to create files for
 %yearlist = 2008:2014;
 % Partitioned data source
-partmethod = 'old_eddyproc' ;%; %'Reddyproc' 'old_eddyproc'
+% eddyproc - This uses DatasetafterfluxpartMRGL_year.txt, which is the
+% output of the online tool as of ~ the beginning of 2017
+partmethod = 'eddyproc' ;%; %'Reddyproc' 'old_eddyproc'
 % Make daily files? All AF files should be in $FLUXROOT$/Ameriflux_files
 make_daily = false;
-write_files = true;
+write_files = false;
 process_soil = false;
 version = 'in_house';  %'in_house';  
 showfig = true;
@@ -42,8 +44,8 @@ end
             yearlist = 2016;
             partmethod = 'Reddyproc';
         case 5
-            sitelist = {UNM_sites.PJ_girdle };
-            yearlist = 2009;
+            sitelist = {  UNM_sites.MCon};
+            yearlist = 2017;
              
     end            
 

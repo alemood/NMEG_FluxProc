@@ -1,16 +1,16 @@
-yearlist = 2008:2016;
-sitecode = UNM_sites.PJ;
-% for i = 1:length(yearlist)
-%     year = yearlist( i );
-%     if i == 1
-%         fluxall_T = parse_fluxall_txt_file(sitecode, year  );
-%         T_soil = dealwithheaders( fluxall_T , sitecode ) ;
-%     else
-%         fluxall_T = parse_fluxall_txt_file( sitecode, year  );
-%         T_soil_to_append = dealwithheaders( fluxall_T , sitecode ) ;
-%         T_soil = table_append_common_vars(T_soil , T_soil_to_append);
-%     end
-% end
+yearlist = 2009:2016;
+sitecode = UNM_sites.PJ_girdle;
+for i = 1:length(yearlist)
+    year = yearlist( i );
+    if i == 1
+        fluxall_T = parse_fluxall_txt_file(sitecode, year  );
+       % T_soil = dealwithheaders( fluxall_T , sitecode ) ;
+    else
+        fluxall_T = parse_fluxall_txt_file( sitecode, year  );
+       % T_soil_to_append = dealwithheaders( fluxall_T , sitecode ) ;
+       % T_soil = table_append_common_vars(T_soil , T_soil_to_append);
+    end
+end
 
 for i = 1:length(yearlist)
     year = yearlist( i );
