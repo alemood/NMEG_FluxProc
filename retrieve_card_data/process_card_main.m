@@ -410,12 +410,14 @@ end
 try
     fprintf(1, '\n----------\n');
     if args.Results.interactive
+        
         fprintf(1, 'TRANSFERING COMPRESSED RAW DATA TO EDAC...\n');
-        h = msgbox( 'click to begin FTP transfer', '' );
+        % h = msgbox( 'click to begin FTP transfer', '' );
         % Why wait?
-        %waitfor( h );
-        transfer_2_edac(this_site, card_archive_name)
+        % waitfor( h );
+        % transfer_2_edac(this_site, card_archive_name)
         fprintf(1, 'Done transferring.\n');
+        warning('No longer transferring to EDAC. Back data up to AWS Glacier')
     else
         fprintf(1, ['Non-interactive -- skipping compressed raw data ' ...
                     'transfer to edac...\n']);
