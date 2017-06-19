@@ -134,6 +134,8 @@ switch sitecode
                 lw_correct( lw_incoming, lw_outgoing );
         elseif year_arg == 2016
             [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
+        elseif year_arg == 2017
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end
         
         %%%%%%%%%%%%%%%%% shrubland
@@ -263,6 +265,8 @@ switch sitecode
             Par_Avg( idx2 ) = fillPAR( idx2 );
             % FIXME - drop and use CG3CO vars?
             [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
+        elseif year_arg == 2017
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end
         
         %%%%%%%%%%%%%%%%% juniper savanna
@@ -378,6 +382,8 @@ switch sitecode
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing );
         elseif year_arg == 2016;
             % FIXME - drop and use CG3CO vars?
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
+        elseif year_arg == 2017
             [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end
         
@@ -659,7 +665,9 @@ switch sitecode
             % FIXME - should we just use CG3co values?
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
         elseif year_arg == 2016
-             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2017
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end
         
         %%%%%%%%%%%%%%%%% mixed conifer
@@ -753,12 +761,14 @@ switch sitecode
             idx = decimal_day > 28.44 & decimal_day <= 64.4583;    
             sw_incoming( idx ) = sw_out_temp( idx );
             lw_incoming( idx ) = sw_in_temp( idx );
-            sw_outgoing( idx ) = lw_in_temp( idx );   
-           
-           
+            sw_outgoing( idx ) = lw_in_temp( idx );
+            
+            
             
             % Temp-correct longwave
-             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2017
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end
         
         %%%%%%%%%%%%%%%%% texas
@@ -880,7 +890,9 @@ switch sitecode
             lw_outgoing( idx ) = ...
                 lw_outgoing( idx ) / cnr1_mult_old * cnr1_mult;
             % Temperature correction just for long-wave
-            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing); 
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2017
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end
     case UNM_sites.MCon_SS
         if year_arg == 2015 
@@ -889,6 +901,8 @@ switch sitecode
         elseif year_arg == 2016
             % Temperature correction just for long-wave
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2017
+            [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         end
 end
 
