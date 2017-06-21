@@ -20,7 +20,7 @@ if runUncertainty
 end
 
 if runKernelsRegr 
-    addpath( genpath('KernelRegressions'))
+    addpath( genpath('A:/Code/KernelRegressions'))
 end
 % Moved to ./m_utils/
 %addpath('/home/greg/current/MatlabFluxUtilities/')

@@ -4,12 +4,12 @@
 sitelist = { UNM_sites.GLand, UNM_sites.SLand, UNM_sites.New_GLand, ...
     UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle ,...
     UNM_sites.PPine, UNM_sites.MCon, UNM_sites.MCon_SS };
-sitelist = { UNM_sites.MCon};
+sitelist = { UNM_sites.GLand, UNM_sites.SLand, UNM_sites.New_GLand };
 yearlist = 2017;
 
 % True, overwrite files; False; do not overwrite
-write_qc = false;
-write_gf = false;
+write_qc = true;
+write_gf = true;
 old_fluxall = false;
 rungapfiller = false;
 
@@ -21,7 +21,7 @@ for i = 1:length(sitelist);
         % nearby site met gap filler  %draw plots == 3
    
 % FIRST RBD
-        UNM_RemoveBadData(site, year, 'draw_plots',1, ...   
+        UNM_RemoveBadData(site, year, 'draw_plots',0, ...   
             'write_QC', write_qc, 'write_GF', write_gf, ...
             'old_fluxall', old_fluxall);
        
@@ -33,10 +33,10 @@ for i = 1:length(sitelist);
 
         UNM_fill_met_gaps_from_nearby_site( site, year, 'write_output', write_gf );
         
-        
-         UNM_RemoveBadData( site, year, 'draw_plots', 0,  ...
-             'write_QC', write_qc, 'write_GF', write_gf, ...
-             'old_fluxall', old_fluxall);
+%         
+%          UNM_RemoveBadData( site, year, 'draw_plots', 0,  ...
+%              'write_QC', write_qc, 'write_GF', write_gf, ...
+%              'old_fluxall', old_fluxall);
         close all
         % Fill in gaps using the REddyProc package
      if rungapfiller

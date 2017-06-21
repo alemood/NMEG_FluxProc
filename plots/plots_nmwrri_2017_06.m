@@ -1,8 +1,8 @@
 % ET PLOTS FOR NMWRRI JUNE 2017 ET CONFERENCE
-% The kernel regression plotting is a mess. Just laod surface data and do
+% The kernel regression plotting is a mess. Just load surface data and do
 % plotting here. 
 setenv('KR','A:\Code\KernelRegressions')
-save_fig = true;
+save_fig = false;
 
 % Set color pallette
 gcolour=[0.9,0.5,0.0];
@@ -548,6 +548,7 @@ for i = 1:length(all_data)
 end
   
 %% Yearly cumulative P-ET
+h_fig = figure('Position',[148 638 1489 411])
 for i = 1:length(all_data)
     
     % Accumulatve Precip and ET values over water year, grab end of year values
@@ -562,8 +563,8 @@ end
     hold off
     legend([all_data(:,1)],'Location','Best')
     ylabel('cumulative yearly P - ET [mm]')
-    xlabel('Water Year')
-    xlim([2007 2015])
+    xlabel('Hydrologic Year')
+    xlim([2007 2016])
     title(sprintf('Water Year %d',uniqueWY(j)))
     if save_fig 
     fname = fullfile( getenv('FLUXROOT'),'Plots\NMWRRI_ET','yearly_precip_less_et.png');

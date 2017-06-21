@@ -1,8 +1,8 @@
 %close all;
 %clear all;
 %
-% sitelist = {UNM_sites.MCon, UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle, ...
-%     UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine, UNM_sites.New_GLand};
+ sitelist = {UNM_sites.MCon_SS,UNM_sites.MCon, UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle, ...
+     UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine, UNM_sites.New_GLand};
 
 %sitelist={UNM_sites.New_GLand};
 % Years to create files for
@@ -23,7 +23,7 @@ if ~showfig
 end
 
 %for k = 5
- for k = 5:5;
+ for k = 4;
     switch k
         case 1
             sitelist = { UNM_sites.JSav, ...
@@ -38,13 +38,13 @@ end
                 UNM_sites.New_GLand }
             yearlist = 2010:2015;
         case 4
-            sitelist =  {UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle,...
+            sitelist =  { UNM_sites.PJ, UNM_sites.PJ_girdle,...
                 UNM_sites.SLand, UNM_sites.GLand, UNM_sites.New_GLand, ...
-                UNM_sites.PPine, UNM_sites.MCon, UNM_sites.MCon_SS};
-            yearlist = 2016;
-            partmethod = 'Reddyproc';
+                UNM_sites.PPine, UNM_sites.MCon_SS};
+            yearlist = 2017;
+            partmethod = 'eddyproc';
         case 5
-            sitelist = {  UNM_sites.MCon};
+            sitelist = {UNM_sites.MCon};
             yearlist = 2017;
              
     end            

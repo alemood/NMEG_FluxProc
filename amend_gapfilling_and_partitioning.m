@@ -48,7 +48,11 @@ data_amended.Reco_HBLR_amended = data_amended.Reco_HBLR;
 catch %post Aug 2016 MPI partitioner headers
     % Keep the HBLR suffix. Saves having to change lots of variables below.
     % It's usually thrown out in the ameriflux file maker anyways.
-data_amended.Reco_HBLR_amended = data_amended.Reco_DT;
+    if ~isempty(regexp_header_vars(data_amended,'Reco_DT'))
+        data_amended.Reco_HBLR_amended = data_amended.Reco_DT;
+    else
+        warning('MPI Partitioner may have failed. No Daytime partioned data exists')
+    end
 end
 
 
