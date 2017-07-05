@@ -138,6 +138,7 @@ if sitecode == UNM_sites.GLand; % grassland
     rH_min = 0; rH_max = 1;
     h2o_max = 30; h2o_min = 0;
     
+    
 elseif sitecode == UNM_sites.SLand; % shrubland
     ustar_lim = 0.08;
     co2_min_by_month = -15; co2_max_by_month = 6;
@@ -331,6 +332,11 @@ elseif sitecode == UNM_sites.TX_grass;
     press_min = 70; press_max = 130; 
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% filter all sites with this LW_incoming threshold
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+LWin_min = 105;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % read the fluxall file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -476,6 +482,8 @@ CNR1TK = [];
 CNR1_var = regexp_header_vars( data, 'CNR1*|Temp_C_Avg' );
 if ~isempty(CNR1_var)
     CNR1TK = data.( CNR1_var{ 1 } ) + 273.15;
+    % Remove ridiculously cold CNR1 temps
+    CNR1TK(find(CNR1TK < 225 )) = NaN;
 end
 
 h2oflag_1 = 0;
@@ -896,13 +904,20 @@ precip = fix_incorrect_precip_factors( sitecode, year_arg, ...
 % will have lw_incomingCo and lw_outgoingCo corrected variables.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% In 2007 & 2010 the thermocouple in the CNR1 at GLand failed. Use air temp.
+% In 2007 ,2010, & 2011 the thermocouple in the CNR1 at GLand failed. Use
+% air temp or a linear regression with Tdry
 if sitecode == 1 && year_arg==2007;
     CNR1TempK = CNR1TK;
     idx1 = find(decimal_day > 156.71 & decimal_day < 162.52 )
     CNR1TempK( idx1 ) = air_temp_hmp( idx1 ) + 273.15;
 elseif sitecode == 1 && year_arg==2010;
     CNR1TempK = air_temp_hmp + 273.15;
+elseif sitecode == 1 && year_arg==2011;
+    CNR1TempK = CNR1TK;
+    keepid = CNR1TK >= Tdry_min & CNR1TK <= Tdry_max; 
+    [B,~,R,~,STATS] = regress(CNR1TK(keepid),[ones(length(Tdry(keepid)),1) Tdry(keepid)]);
+    idx1 = 1:4204;
+    CNR1TempK( idx1 ) = Tdry( idx1 ).*B(2) + B(1);
 % Same at shrub in 2007
 elseif sitecode == 2 && year_arg==2007;
     CNR1TempK = CNR1TK;
@@ -961,7 +976,10 @@ legend('SW_i','SW_o','LW_i','LW_o')
     Par_Avg, ...
     NR_tot, ...
     wnd_spd, ...
-    CNR1TempK );
+    CNR1TempK);
+
+bad_lw_id = find(lw_incoming < LWin_min );
+lw_incoming(bad_lw_id) = NaN;
 
 ax(2) = subplot(2,1,2);
 plot(data_orig.timestamp,...
