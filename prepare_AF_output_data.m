@@ -64,7 +64,20 @@ dummy = repmat( -9999, size( qc_tbl, 1 ), 1 );
 % Create basic output tables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-timestamp = qc_tbl.timestamp; % Will be stripped later
+
+% Remove the last timestamp of last year here, for now. These get created in qc and
+% gapfilling files and needs to be taken out! 
+qc_rmv = find(qc_tbl.jday == 1 | isequal( mod( qc_tbl.timestamp( 1 ), 1 ) , 0 ));
+pt_rmv = find(isnan(pt_tbl{:,'Year'}));
+if ~isempty(qc_rmv)
+    qc_tbl(1,:) = [];
+end
+
+if ~isempty(pt_rmv)
+    pt_tbl(1,:) = [];
+end
+
+timestamp = qc_tbl.timestamp; % Will be stripped later 
 % Create an ISO standardized timestamp and convert to numeric.
 % Need to use hig precision when writing this to file.
 if strcmpi(vers,'in_house')
@@ -74,16 +87,16 @@ DTIME = timestamp - datenum( YEAR, 1, 1 ) + 1;
 amflx_gf = table( timestamp, TIMESTAMP , YEAR, DTIME );
 amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMMSS'...
     'YYYY', 'DDD.D' };    
-else
+else % AMP/FLUXNET do not require Year and DTIME columns
 TIMESTAMP_END = str2num( datestr( timestamp, 'YYYYmmDDHHMM' ));
 TIMESTAMP_START = str2num( datestr( timestamp - datenum([0,0,0,0,30,0]),...
     'YYYYmmDDHHMM'));
-[ YEAR, ~, ~ ] = datevec( timestamp );
-DTIME = timestamp - datenum( YEAR, 1, 1 ) + 1;
-amflx_gf = table( timestamp, TIMESTAMP_START, TIMESTAMP_END , YEAR, DTIME );
-amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMM', 'YYYYMMDDHHMM'...
-    'YYYY', 'DDD.D' };
+
+
+amflx_gf = table( timestamp, TIMESTAMP_START, TIMESTAMP_END  );
+amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMM', 'YYYYMMDDHHMM'};
 end
+
 
 amflx_gaps = amflx_gf;
 
@@ -103,12 +116,14 @@ amflx_gf = add_cols( amflx_gf, pt_tbl.Tair_f, ...
                      { 'TA_F' }, { 'deg C' }, TA_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.Tdry - 273.15, ...
                        { 'TA' }, { 'deg C' } );
+amflx_gaps = add_cols( amflx_gaps, pt_tbl.Tair_f, ...
+                     { 'TA_F' }, { 'deg C' });
 
 % RH
 rH_flag = verify_gapfilling( pt_tbl.rH, qc_tbl.rH, 1e-3 );
 amflx_gf = add_cols( amflx_gf, pt_tbl.rH, { 'RH_F' }, { '%' }, rH_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.rH, { 'RH' }, { '%' } );
-
+amflx_gaps = add_cols( amflx_gaps, pt_tbl.rH, { 'RH_F' }, { '%' });
 % VPD
 VPD_flag = verify_gapfilling( pt_tbl.VPD_f, qc_tbl.VPD, 1e-3 );
 % Convert to kPa
@@ -116,6 +131,7 @@ VPD = qc_tbl.VPD ./ 10;
 VPD_f = pt_tbl.VPD_f ./ 10;
 amflx_gf = add_cols( amflx_gf, VPD_f, { 'VPD_F' }, { 'kPa' }, VPD_flag );
 amflx_gaps = add_cols( amflx_gaps, VPD, { 'VPD' }, { 'kPa' } );
+amflx_gaps = add_cols( amflx_gaps, VPD_f, { 'VPD_F' }, { 'kPa' } );
 
 % Rg - pyrranometer
 Rg_flag = verify_gapfilling( pt_tbl.Rg_f, qc_tbl.sw_incoming, 1e-1 );
@@ -123,6 +139,8 @@ amflx_gf = add_cols( amflx_gf, pt_tbl.Rg_f, ...
                      { 'SW_IN_F' }, { 'W/m2' }, Rg_flag ); %SW_IN_F
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.sw_incoming, ...
                        { 'SW_IN' }, { 'W/m2' } );
+amflx_gaps = add_cols( amflx_gaps, pt_tbl.Rg_f, ...
+                     { 'SW_IN_F' }, { 'W/m2' } );
 % Make sure original NETRAD is nan in these locations also
 qc_tbl.NR_tot( Rg_flag ) = nan;
 
@@ -134,11 +152,14 @@ P_flag = verify_gapfilling( pt_tbl.Precip, qc_tbl.precip, 1e-4 );
 amflx_gf = add_cols( amflx_gf, pt_tbl.Precip, ... % P_F
     { 'P_F' }, { 'mm' }, P_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
+amflx_gaps = add_cols( amflx_gaps,  pt_tbl.Precip, ... 
+    { 'P_F' }, { 'mm' });
 catch
 P_flag = NaN( height(pt_tbl) , 1 );
 amflx_gf = add_cols( amflx_gf, 	qc_tbl.precip, ... % P_F
     { 'P_F' }, { 'mm' }, P_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
+
 end
 
 
@@ -161,6 +182,7 @@ amflx_gaps = add_cols( amflx_gaps, qc_tbl.lw_incoming, ...
                    
 figure();
 plot(timestamp, [ amflx_gf.LW_IN_F, amflx_gaps.LW_IN ] ,'.');
+legend('Filled','Gaps');
 datetick;dynamicDateTicks
 title('LW\_IN');
 
@@ -519,6 +541,8 @@ amflx_gf = replace_badvals( amflx_gf, -9999, fp_tol );
     % Function to make sure the observed data and gapfilled data don't
     % overlap - returns a flag indicating where gapfilling has occurred
     function gap_flag = verify_gapfilling( gapfilled, obs, tol )
+        % gapfilled = partitioned table
+        % obs = QC tbl
         % Verify that gapfilled and obs are the same size
         if length( gapfilled ) ~= length( obs )
             error( 'Gapfilled and observed data have different sizes!' );

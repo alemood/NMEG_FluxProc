@@ -350,15 +350,18 @@ amflux_gaps( :, {'GPP_F_MR2005','RECO_MR2005','GPP_GL2010','RECO_GL2010', ...
     'GPP_GL2010_amended_ecb','RECO_GL2010_amended_ecb',...
     'NEE_GL2010_amended_ecb'}) = [];
 
-if strcmp( version , 'fluxnet' )
+if strcmp( version , 'aflx' )
     amflux_gf ( : , {'GPP_PI' , 'RECO_PI' }) = [];
     amflux_gaps ( : , {'GPP_PI' , 'RECO_PI' }) = [];
-    amflux_gaps ( : , {'SUN_FLAG'} ) =  [] ;
+    amflux_gaps ( : , {'SUN_FLAG' , 'NIGHT'} ) =  [] ;
 end    
 
 if args.Results.write_files
-    UNM_Ameriflux_write_file( sitecode, year, amflux_gf, ...
-        'mlitvak@unm.edu', 'gapfilled' , 'version' , version );
+    % Only write gapfilled files for our use
+    if strcmp( version , 'in_house')
+        UNM_Ameriflux_write_file( sitecode, year, amflux_gf, ...
+            'mlitvak@unm.edu', 'gapfilled' , 'version' , version );
+    end
     
     UNM_Ameriflux_write_file( sitecode, year, amflux_gaps, ...
         'mlitvak@unm.edu', 'with_gaps' , 'version' , version );
