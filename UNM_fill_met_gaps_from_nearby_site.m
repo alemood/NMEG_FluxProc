@@ -519,7 +519,7 @@ result = 0;
    
     tableRename.Properties.VariableNames = newvarnames ;
     tableRename.Properties.VariableUnits = newvarunits ;
-    remove_idx = tableRename.Year ~= year
+    remove_idx = tableRename.Year ~= year ;
     tableRename(remove_idx,:) = [];
     end
 end

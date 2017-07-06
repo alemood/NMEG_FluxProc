@@ -13,7 +13,7 @@ yearlist = 2007;
 partmethod = 'old_eddyproc' ;%; %'Reddyproc' 'old_eddyproc'
 % Make daily files? All AF files should be in $FLUXROOT$/Ameriflux_files
 make_daily = false;
-write_files = false;
+write_files = true;
 process_soil = false;
 version = 'aflx';  %'in_house';  
 showfig = true;
@@ -23,30 +23,19 @@ if ~showfig
 end
 
 %for k = 5
- for k = 5;
+ for k =2;
     switch k
         case 1
-            sitelist = { UNM_sites.JSav, ...
-                UNM_sites.SLand, UNM_sites.GLand, ...
-                UNM_sites.PPine, UNM_sites.MCon};
-            yearlist = 2007:2015;
-        case 2
-             sitelist = { UNM_sites.PJ }
-            yearlist = 2008:2015;
-        case 3
-              sitelist = {  UNM_sites.PJ_girdle...
-                UNM_sites.New_GLand }
-            yearlist = 2010:2015;
-        case 4
-            sitelist =  { UNM_sites.PJ, UNM_sites.PJ_girdle,...
-                UNM_sites.SLand, UNM_sites.GLand, UNM_sites.New_GLand, ...
-                UNM_sites.PPine, UNM_sites.MCon_SS};
-            yearlist = 2017;
+            sitelist = { UNM_sites.MCon_SS};
+            yearlist = 2016;
             partmethod = 'eddyproc';
-        case 5
-            sitelist = {UNM_sites.GLand};
-            yearlist = 2007;
-             
+        case 2       
+            sitelist = { UNM_sites.PJ,...
+                UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine};
+            yearlist = 2016;
+            partmethod = 'eddyproc';
+        case 3
+            sitelist = {UNM_sites.JSav};
     end            
 
 for i = 1:length(sitelist);
@@ -88,7 +77,7 @@ for i = 1:length(sitelist);
         %clear year;
     end
    
-    close all;
+   % close all;
     clear sitecode;
 end
 
