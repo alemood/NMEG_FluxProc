@@ -318,11 +318,11 @@ switch site
               'Reco_HBLR', site, yr );
         case 2015
           % 1 periods with abnormally high respiration this year.
-          idx = DOYidx( 7.25 ) : DOYidx( 14.95 );
-          data_amended.Reco_HBLR_amended( idx ) = ...
-              norm( data_in.Reco_HBLR( idx ), 1.85 );
-          dfig = plot_amended( data_in, data_amended, ...
-              'Reco_HBLR', site, yr );
+%           idx = DOYidx( 7.25 ) : DOYidx( 14.95 );
+%           data_amended.Reco_HBLR_amended( idx ) = ...
+%               norm( data_in.Reco_HBLR( idx ), 1.85 );
+%           dfig = plot_amended( data_in, data_amended, ...
+%               'Reco_HBLR', site, yr );
       end
 end
 
