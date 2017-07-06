@@ -23,7 +23,7 @@ if ~showfig
 end
 
 %for k = 5
- for k =2;
+ for k = 5;
     switch k
         case 1
             sitelist = { UNM_sites.MCon_SS};
@@ -55,7 +55,7 @@ for i = 1:length(sitelist);
                 'gf_part_source', partmethod);
             
         elseif strcmp( partmethod , 'eddyproc')
-              UNM_Ameriflux_File_Maker( sitecode, year, ...
+              UNM_Ameriflux_File_Maker( sitecode, year, ...   UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine
                 'write_files', write_files, ...
                 'write_daily_file', make_daily, ...
                 'process_soil_data', process_soil,...
