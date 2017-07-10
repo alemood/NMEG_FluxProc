@@ -153,7 +153,7 @@ if strcmpi(args.Results.gf_part_source, 'Reddyproc')
         'timestamp', 'timestamp', 3, t_min, t_max );
 end
 % Start/end time for the files being created
-Jan1 = datenum( year, 1, 1, 0, 0, 0 );
+Jan1 = datenum( year, 1, 1, 0, 30, 0 );
 %Dec31 = datenum( year, 12, 31, 23, 59, 59 );
 % Preserves the last 30min period of year
 Dec31 = datenum( year, 12, 31, 24, 0, 0 );
@@ -242,6 +242,12 @@ keenan = false;
 % create Ameriflux output table and write to ASCII files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% FIXME - Have to wrangle all those files timestamps into beginning on the
+% half hour past new years eve of the given year and ending at midnight of
+% the Jan 1 of the folling year. For now
+warning('Once t_start and t_end are dealth with in code, remove this line')
+% pt_tbl = table_fill_timestamps( pt_tbl, 'timestamp', ...
+%     't_min', Jan1, 't_max', Dec31 );
 % create the variables to be written to the output files
 [ amflux_gaps, amflux_gf ] = ...
     prepare_AF_output_data( sitecode, qc_tbl, pt_tbl, soil_tbl, keenan, version );

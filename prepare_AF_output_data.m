@@ -67,15 +67,15 @@ dummy = repmat( -9999, size( qc_tbl, 1 ), 1 );
 
 % Remove the last timestamp of last year here, for now. These get created in qc and
 % gapfilling files and needs to be taken out! 
-qc_rmv = find(qc_tbl.jday == 1 | isequal( mod( qc_tbl.timestamp( 1 ), 1 ) , 0 ));
-pt_rmv = find(isnan(pt_tbl{:,'Year'}));
-if ~isempty(qc_rmv)
-    qc_tbl(1,:) = [];
-end
-
-if ~isempty(pt_rmv)
-    pt_tbl(1,:) = [];
-end
+% qc_rmv = find(qc_tbl.jday == 1 | isequal( mod( qc_tbl.timestamp( 1 ), 1 ) , 0 ));
+% pt_rmv = find(isnan(pt_tbl{:,'Year'}));
+% if ~isempty(qc_rmv)
+%     qc_tbl(1,:) = [];
+% end
+% 
+% if ~isempty(pt_rmv)
+%     pt_tbl(1,:) = [];
+% end
 
 timestamp = qc_tbl.timestamp; % Will be stripped later 
 % Create an ISO standardized timestamp and convert to numeric.
@@ -139,8 +139,6 @@ amflx_gf = add_cols( amflx_gf, pt_tbl.Rg_f, ...
                      { 'SW_IN_F' }, { 'W/m2' }, Rg_flag ); %SW_IN_F
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.sw_incoming, ...
                        { 'SW_IN' }, { 'W/m2' } );
-amflx_gaps = add_cols( amflx_gaps, pt_tbl.Rg_f, ...
-                     { 'SW_IN_F' }, { 'W/m2' } );
 % Make sure original NETRAD is nan in these locations also
 qc_tbl.NR_tot( Rg_flag ) = nan;
 
@@ -156,9 +154,10 @@ amflx_gaps = add_cols( amflx_gaps,  pt_tbl.Precip, ...
     { 'P_F' }, { 'mm' });
 catch
 P_flag = NaN( height(pt_tbl) , 1 );
-amflx_gf = add_cols( amflx_gf, 	qc_tbl.precip, ... % P_F
+amflx_gf = add_cols( amflx_gf, qc_tbl.precip, ... % P_F
     { 'P_F' }, { 'mm' }, P_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
+%amflx_gaps = add_cols( amflx_gaps, pt_tbl.P, { 'P_F' }, { 'mm' } );
 
 end
 
