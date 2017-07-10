@@ -1,16 +1,16 @@
 %close all;
 %clear all;
 %
- sitelist = {UNM_sites.MCon_SS,UNM_sites.MCon, UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle, ...
-     UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine, UNM_sites.New_GLand};
-
-sitelist={UNM_sites.GLand};
-% Years to create files for
-yearlist = 2007;
-% Partitioned data source
-% eddyproc - This uses DatasetafterfluxpartMRGL_year.txt, which is the
-% output of the online tool as of ~ the beginning of 2017
-partmethod = 'old_eddyproc' ;%; %'Reddyproc' 'old_eddyproc'
+%  sitelist = {UNM_sites.MCon_SS,UNM_sites.MCon, UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle, ...
+%      UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine, UNM_sites.New_GLand};
+% 
+% sitelist={UNM_sites.GLand};
+% % Years to create files for
+% yearlist = 2007;
+% % Partitioned data source
+% % eddyproc - This uses DatasetafterfluxpartMRGL_year.txt, which is the
+% % output of the online tool as of ~ the beginning of 2017
+% partmethod = 'old_eddyproc' ;%; %'Reddyproc' 'old_eddyproc'
 % Make daily files? All AF files should be in $FLUXROOT$/Ameriflux_files
 make_daily = false;
 write_files = true;
@@ -23,19 +23,25 @@ if ~showfig
 end
 
 %for k = 5
- for k = 5;
+ for k = 1
     switch k
         case 1
-            sitelist = { UNM_sites.MCon_SS};
-            yearlist = 2016;
-            partmethod = 'eddyproc';
-        case 2       
+            sitelist = { UNM_sites.PJ};
+            yearlist = 2008;
+            partmethod = 'old_eddyproc';
+        case 2
+            sitelist = { UNM_sites.JSav};
+            yearlist = 2007:2015;
+            partmethod ='old_eddyproc';
+        case 3       
             sitelist = { UNM_sites.PJ,...
                 UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine};
             yearlist = 2016;
             partmethod = 'eddyproc';
-        case 3
-            sitelist = {UNM_sites.JSav};
+        case 4
+            sitelist = {UNM_sites.MCon_SS};
+            yearlist = 2016;
+            partmethod = 'eddyproc';
     end            
 
 for i = 1:length(sitelist);
