@@ -27,7 +27,8 @@
 
 % Site and year selection
 sitecode = UNM_sites.MCon;
-year = 2015;
+
+year = 2010;
 
 % Site configuration
 conf = parse_yaml_config( sitecode ,'SiteVars' );
@@ -70,7 +71,9 @@ UTC_offset = 7;
 % Calculate remaining variables
 % -----------------------------
 n = height(flux_tbl);
-[ sigma_v ] = flux_tbl.cross_wind_velocity_variance;
+
+[ sigma_v ] = sqrt( flux_tbl.cross_wind_velocity_variance );
+
 
 zm = repmat( zm , n ,1 );
 d = repmat( d, n , 1);
