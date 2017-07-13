@@ -43,6 +43,7 @@ args.addRequired( 'qc_tbl', @(x) ( isa( x, 'table' )));
 args.addRequired( 'pt_tbl', @(x) ( isa( x, 'table' )));
 args.addRequired( 'soil_tbl', @(x) ( isa( x, 'table' )));
 args.addOptional( 'version', 'in_house', @ischar);
+args.addOptional( 'ignore_partitioner' , false);
 
 % parse optional inputs
 args.parse( sitecode, qc_tbl, pt_tbl, soil_tbl, varargin{:} );
@@ -53,6 +54,7 @@ qc_tbl = args.Results.qc_tbl;
 pt_tbl = args.Results.pt_tbl;
 soil_tbl = args.Results.soil_tbl;
 vers = args.Results.version;
+ignore_partitioner = args.Results.ignore_partitioner;
 
 soil_moisture = false; % turn off soil moisture processing for now
 
@@ -111,7 +113,7 @@ amflx_gaps = amflx_gf;
 % Tair
 % FIXME - this is sonic temperature (Tdry - 273.15), not hmp
 % temperature. See issue 12. Line below comments is an attempt to fix. 
-TA_flag = verify_gapfilling( pt_tbl.Tair_f, qc_tbl.Tdry - 273.15, 1e-3 );
+TA_flag = verify_gapfilling( pt_tbl.Tair_f, qc_tbl.Tdry - 273.15, 1e-3, ignore_partitioner );
 amflx_gf = add_cols( amflx_gf, pt_tbl.Tair_f, ...
                      { 'TA_F' }, { 'deg C' }, TA_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.Tdry - 273.15, ...
@@ -120,12 +122,12 @@ amflx_gaps = add_cols( amflx_gaps, pt_tbl.Tair_f, ...
                      { 'TA_F' }, { 'deg C' });
 
 % RH
-rH_flag = verify_gapfilling( pt_tbl.rH, qc_tbl.rH, 1e-3 );
+rH_flag = verify_gapfilling( pt_tbl.rH, qc_tbl.rH, 1e-3,ignore_partitioner );
 amflx_gf = add_cols( amflx_gf, pt_tbl.rH, { 'RH_F' }, { '%' }, rH_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.rH, { 'RH' }, { '%' } );
 amflx_gaps = add_cols( amflx_gaps, pt_tbl.rH, { 'RH_F' }, { '%' });
 % VPD
-VPD_flag = verify_gapfilling( pt_tbl.VPD_f, qc_tbl.VPD, 1e-3 );
+VPD_flag = verify_gapfilling( pt_tbl.VPD_f, qc_tbl.VPD, 1e-3 ,ignore_partitioner);
 % Convert to kPa
 VPD = qc_tbl.VPD ./ 10;
 VPD_f = pt_tbl.VPD_f ./ 10;
@@ -134,7 +136,7 @@ amflx_gaps = add_cols( amflx_gaps, VPD, { 'VPD' }, { 'kPa' } );
 amflx_gaps = add_cols( amflx_gaps, VPD_f, { 'VPD_F' }, { 'kPa' } );
 
 % Rg - pyrranometer
-Rg_flag = verify_gapfilling( pt_tbl.Rg_f, qc_tbl.sw_incoming, 1e-1 );
+Rg_flag = verify_gapfilling( pt_tbl.Rg_f, qc_tbl.sw_incoming, 1e-1, ignore_partitioner );
 amflx_gf = add_cols( amflx_gf, pt_tbl.Rg_f, ...
                      { 'SW_IN_F' }, { 'W/m2' }, Rg_flag ); %SW_IN_F
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.sw_incoming, ...
@@ -146,7 +148,7 @@ qc_tbl.NR_tot( Rg_flag ) = nan;
 % Gapfilled precip should be found in MPI files pre 2016. The try/catch
 % statement will deal with 2016+ files, which have no precip (*MRGL*)
 try
-P_flag = verify_gapfilling( pt_tbl.Precip, qc_tbl.precip, 1e-4 );
+P_flag = verify_gapfilling( pt_tbl.Precip, qc_tbl.precip, 1e-4,ignore_partitioner );
 amflx_gf = add_cols( amflx_gf, pt_tbl.Precip, ... % P_F
     { 'P_F' }, { 'mm' }, P_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
@@ -173,7 +175,7 @@ gf_idx = isnan(lw_in_gf) & pt_tbl.Rg_f >= 25;
 lw_in_gf( gf_idx ) = Lio( gf_idx, 2 );
 
 % Longwave up - pyrgeometer
-LW_IN_flag = verify_gapfilling( lw_in_gf, qc_tbl.lw_incoming, 1e-4 );
+LW_IN_flag = verify_gapfilling( lw_in_gf, qc_tbl.lw_incoming, 1e-4 ,ignore_partitioner);
 amflx_gf = add_cols( amflx_gf, lw_in_gf, ...
                      { 'LW_IN_F' }, { 'W/m2' }, LW_IN_flag ); %LW_IN_F
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.lw_incoming, ...
@@ -209,7 +211,7 @@ if (sitecode==UNM_sites.GLand || sitecode==UNM_sites.SLand) && ...
 else
     NETRAD_new = ( amflx_gf.SW_IN_F + amflx_gf.LW_IN_F ) - ...
         ( qc_tbl.sw_outgoing + qc_tbl.lw_outgoing );
-    NETRAD_flag = verify_gapfilling( NETRAD_new, qc_tbl.NR_tot, 1e-1 );
+    NETRAD_flag = verify_gapfilling( NETRAD_new, qc_tbl.NR_tot, 1e-1,ignore_partitioner );
     amflx_gf = add_cols( amflx_gf, NETRAD_new, ...
         { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag ); %NETRAD_F
     amflx_gaps = add_cols( amflx_gaps, qc_tbl.NR_tot, ...
@@ -539,7 +541,7 @@ amflx_gf = replace_badvals( amflx_gf, -9999, fp_tol );
 
     % Function to make sure the observed data and gapfilled data don't
     % overlap - returns a flag indicating where gapfilling has occurred
-    function gap_flag = verify_gapfilling( gapfilled, obs, tol )
+    function gap_flag = verify_gapfilling( gapfilled, obs, tol , ignore_partitioner )
         % gapfilled = partitioned table
         % obs = QC tbl
         % Verify that gapfilled and obs are the same size
@@ -557,7 +559,7 @@ amflx_gf = replace_badvals( amflx_gf, -9999, fp_tol );
         % There are some small rounding errors when comparing mpi output
         % to our files, but otherwise the columns should be the same
         difftest = abs( gapfilled - gapfilled_obs ) > tol ;
-        if sum( difftest ) > 0
+        if sum( difftest ) > 0 & ~ignore_partitioner 
             % Figure showing observations that passed the QC process
             % (in fluxall_qc_rbd) but still appear to be gapfilled.
             % This may be due to rounding error (check tolerance used),

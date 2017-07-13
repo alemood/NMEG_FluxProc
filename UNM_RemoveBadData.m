@@ -958,11 +958,11 @@ elseif sitecode == 13 & year_arg ==2016
 else
     CNR1TempK = CNR1TK;
 end
-figure(); ax(1) = subplot(2,1,1);
-plot(data_orig.timestamp,...
-    [ sw_incoming, sw_outgoing, lw_incoming, lw_outgoing],'.' );
-
-legend('SW_i','SW_o','LW_i','LW_o')
+% figure(); ax(1) = subplot(2,1,1);
+% plot(data_orig.timestamp,...
+%     [ sw_incoming, sw_outgoing, lw_incoming, lw_outgoing],'.' );
+% 
+% legend('SW_i','SW_o','LW_i','LW_o')
 
 [ sw_incoming, sw_outgoing, ...
     lw_incoming, lw_outgoing, Par_Avg ] = ...
@@ -978,15 +978,31 @@ legend('SW_i','SW_o','LW_i','LW_o')
     wnd_spd, ...
     CNR1TempK);
 
+%------------------------------------------------------------------------
+% Check that radiation lines up with solar non and remove negative SW_in
+%------------------------------------------------------------------------
+
+[ sw_incoming, sw_outgoing, ...
+    lw_incoming, lw_outgoing, Par_Avg ] = ...
+    UNM_RBD_remove_bad_radiation_values( sitecode, ...
+    year_arg, ...
+    decimal_day, ...
+    sw_incoming, ...
+    sw_outgoing, ...
+    lw_incoming, ...
+    lw_outgoing, ...
+    Par_Avg, ...
+    NR_tot );
+
 bad_lw_id = find(lw_incoming < LWin_min );
 lw_incoming(bad_lw_id) = NaN;
-
-ax(2) = subplot(2,1,2);
-plot(data_orig.timestamp,...
-    [ sw_incoming, sw_outgoing, lw_incoming, lw_outgoing], '.' );
-legend('SW_i','SW_o','LW_i','LW_o')
-linkaxes(ax,'x')
-dynamicDateTicks(ax,'linked')
+% 
+% ax(2) = subplot(2,1,2);
+% plot(data_orig.timestamp,...
+%     [ sw_incoming, sw_outgoing, lw_incoming, lw_outgoing], '.' );
+% legend('SW_i','SW_o','LW_i','LW_o')
+% linkaxes(ax,'x')
+% dynamicDateTicks(ax,'linked')
 % These next 2 removals were formerly in 
 % UNM_RBD_apply_radiation_calibration_factors 
 
@@ -1331,6 +1347,7 @@ if iteration > 1
     % Only happens if switch is set to true
     if ~ustar_filter_switch
         ustar_lim = 0;
+        fprintf('\n\n=============== USTAR FILTERING SWITCHED OFF ================= \n\n') 
     end
     ustarflag = find(u_star < ustar_lim);
     removed_ustar = length(ustarflag);

@@ -250,7 +250,8 @@ warning('Once t_start and t_end are dealth with in code, remove this line')
 %     't_min', Jan1, 't_max', Dec31 );
 % create the variables to be written to the output files
 [ amflux_gaps, amflux_gf ] = ...
-    prepare_AF_output_data( sitecode, qc_tbl, pt_tbl, soil_tbl, keenan, version );
+    prepare_AF_output_data( ...
+    sitecode, qc_tbl, pt_tbl, soil_tbl, keenan, version , true );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % make a diagnostic plot of partitioning outputs.
