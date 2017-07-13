@@ -772,7 +772,7 @@ fprintf('-------Calculating SHF and storage @ %s -----\n',char(sitecode))
 
 re_shf_list = {'SHF_'};
 re_swc = {'SWC_[A-Z]\d_\d(?!\d).+(tcor)' , ...
-    'SWC_[A-Z]\d_[2p5|5]_[A-Za-z]' };
+    'SWC_[A-Z]\d_[2p5|5]_[A-Za-z]', 'SWC' };
 re_tcav = {'TCAV_|tcav' , ... 
     'SOILT_[A-Z]\d_[2p5|5]'};
 
@@ -793,7 +793,7 @@ while isempty(tcav_idx)
     count = count + 1;
 end
 
-pit_re = '([PJOG][\d])' ;
+pit_re = '([PJOGT][\d])' ;
 shf_pits = regexp(shf_vars, pit_re ,'match'); shf_pits = [shf_pits{:}];
 swc_pits = regexp(swc_vars, pit_re ,'match'); swc_pits= [swc_pits{:}];
 tcav_pits = regexp( tcav_vars, pit_re , 'match'); tcav_pits = [ tcav_pits{:} ];
