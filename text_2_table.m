@@ -130,7 +130,8 @@ full_line = cellfun( @(x) size( x, 1 ), data ) == n_numeric_vars;
 data = [ data{ find( full_line ) } ]';
 
 T = array2table( data, 'VariableNames', var_names );
-
+if captureTime
 % Add a timestamp
 T.timestamp = dn;
+end
 
