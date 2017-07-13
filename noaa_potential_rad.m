@@ -1,5 +1,5 @@
-function radPotDay = noaa_potential_rad( latitude, longitude, ...
-                                               date)
+function [ solarArray ]  = ...
+    noaa_potential_rad( latitude, longitude, date)
 % Calculates and returns 30 min potential radiation in W/m^2 for
 % specified location and date. Based on NOAA solar model.
 %
@@ -27,6 +27,12 @@ radPot( radPot < 0 ) = 0;
 % Return time of day and potential radiation
 radPotDay = [ mod( date30min, floor( date30min )) * 24, radPot ];
 radPotDay( radPotDay( :, 1 ) == 0, 1 ) = 24;
+
+% Convert sunrise/sunset time to hours from decimal day
+sunriseTimeLST = solCalcs.sunriseTimeLST.*24;
+sunsetTimeLST  = solCalcs.sunsetTimeLST.*24;
+
+solarArray = [ radPotDay, sunriseTimeLST , sunsetTimeLST ] ;
 
 end
 
