@@ -2,7 +2,7 @@ clear all; close all
 site = UNM_sites.PJ;
 siteVars = parse_yaml_config(site,'SiteVars');
 aflx_site = siteVars.ameriflux_name;
-yearlist = 2016;
+yearlist = 2008;
 % QC Parameters
 write_qc = true;
 write_gf = false;
