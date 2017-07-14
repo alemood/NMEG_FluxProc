@@ -481,9 +481,21 @@ switch sitecode
             % FIXME - start using CG3CO vars?
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
         elseif year_arg == 2016;
-             
+            % CNR1 020479 was swapped in, but program not loaded until a
+            % few days later.
+            cnr1_sensitivity_old = 9.69; % Prior to  2016-04-22
+            cnr1_mult_old = 1000 / cnr1_sensitivity_old;
+            CNR1idx = find(decimal_day > 113.3750 & decimal_day < 130.3750);
+            sw_incoming(CNR1idx) = sw_incoming(CNR1idx) ./ cnr1_mult_old .* cnr1_mult;
+            sw_outgoing(CNR1idx) = sw_outgoing(CNR1idx) ./ cnr1_mult_old .* cnr1_mult;
+            lw_incoming(CNR1idx) = lw_incoming(CNR1idx) ./ cnr1_mult_old .* cnr1_mult;
+            lw_outgoing(CNR1idx) = lw_outgoing(CNR1idx) ./ cnr1_mult_old .* cnr1_mult;
             % Fixing bad calibration value
             Par_Avg = Par_Avg * (PAR_KZ_new_up_sens / PAR_KZ_AMP_calibrated_up);
+            % Remove outliers
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            out_idx = find(R >= prctile(R,99.9) | Par_Avg < - 10 );
+            Par_Avg(out_idx) = NaN;
             % FIXME - drop and use CG3CO vars?
             [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );   
         elseif year_arg == 2017;
