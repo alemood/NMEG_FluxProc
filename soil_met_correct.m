@@ -324,7 +324,7 @@ if ~isempty( T_soil_rbd )
     showfig = false; 
     warning('Turning figures OFF here to aid SHF QC. Remove later!')
     sd_filter_windows = [ 1, 1, 1 ];
-    shift_tol = [ 20 ];
+    shift_tol = [ 60];
     noise_filter_windows = [ 5, 21]; % ; 5 , 17 ;5 ,21 ]; % array of backward and forward steps
     med_filter_windows = [1 ];
     sd_filter_thresh = 3;
@@ -349,8 +349,9 @@ if ~isempty( T_soil_rbd )
      end
 end % if ~empty
 
-%============ Individual site bad data removal ============
-% 
+%==========================================================================
+%============ Individual site bad data removal ============================
+%==========================================================================
 ts = datenum( table2array( tstamps ) );
 %
 switch sitecode
@@ -659,9 +660,13 @@ switch sitecode
         if year < 2010 
             idx = ts < datenum( 2009, 5 , 21 );
             [ cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_P1' );
-            T_soil_rbd{ idx , cols_rbd } = 35.2 .* T_soil_rbd{ idx , cols_rbd };
+            % T_soil_rbd{ idx , cols_rbd } = 35.2 .* T_soil_rbd{ idx , cols_rbd };
+            % The above correction factor doesn't look right. Remove
+            T_soil_rbd{ idx , cols_rbd } = NaN;
             [ cols_rbd , ~ ] = regexp_header_vars( T_soil_rbd , 'SHF_J1' );
              T_soil_rbd{ idx , cols_rbd } = 32.1 .* T_soil_rbd{ idx , cols_rbd };
+             T_soil_rbd{ idx , cols_rbd } = NaN;
+             
         end
         
         if year <= 2014
@@ -808,45 +813,50 @@ tcav_idx = tcav_idx(keep_tcav);
 swc_idx = swc_idx(keep_swc);
 
 
-% switch sitecode
-%     case { UNM_sites.GLand ,  UNM_sites.JSav , UNM_sites.SLand, ...
-%            UNM_sites.New_GLand , UNM_sites.MCon, UNM_sites.PPine,...
-%            UNM_sites.MCon_SS }
-%        
-%         [swc_vars swc_idx] = regexp_header_vars( T_soil_rbd, 'SWC_[A-Z]\d_\d(?!\d).+(tcor)' );
-%         
-%         [soilt_vars soilt_idx] = regexp_header_vars( T_soil_rbd, 'TCAV_|tcav' );
-%         [shf_vars shf_idx] = regexp_header_vars( T_soil_rbd, 'SHF_' );
-%     % Sites without TCAV will need to have shallow probes averaged
-%     case { UNM_sites.PJ, UNM_sites.PJ_girdle, UNM_sites.TestSite }
-%         
-%         [swc_vars swc_idx] = regexp_header_vars( T_soil_rbd,  'SWC_[A-Z]\d_[2p5|5]_[A-Za-z]' );
-%         % Average 5 and 10 cm probes
-%         [soilt_vars soilt_idx] = regexp_header_vars( T_soil_rbd, 'SOILT_[A-Z]\d_[5|10]' );
-%         soilt_subset = T_soil_rbd(:,soilt_idx);
-%         [shf_vars shf_idx] = regexp_header_vars( T_soil_rbd, 'SHF_' );
-%         
-%         %------------ TCAV APPROXIMATION FOR PJ SITES
-%         cover_cell = {'P','J','O','G'};
-%         soilt_avg = table();
-%         
-%         % Loop through cover types and pits with HFPs to get an average of
-%         % the shallow temperatures
-%         for i = 1:4 % cover type
-%             for j = 1:3 % pits      
-%                 re = strcat( cover_cell{ i } , num2str(j) );
-%                 % Get index 
-%                 pit_chunk_idx = find(~cellfun( @isempty , regexp(soilt_vars, re)));
-%                 if ~isempty(pit_chunk_idx)
-%                 pit_chunk = soilt_subset(:,pit_chunk_idx);
-%                 pit_avg = nanmean( table2array( pit_chunk ), 2);
-%                 pit_avg = array2table( pit_avg , 'VariableNames', ...
-%                     { strcat( 'TCAV_', re , '_AVG' ) } );
-%                 soilt_avg = [soilt_avg, pit_avg ] ;
-%                 end
-%             end
-%         end     
-% end                
+switch sitecode
+    case { UNM_sites.GLand ,  UNM_sites.JSav , UNM_sites.SLand, ...
+            UNM_sites.New_GLand , UNM_sites.MCon, UNM_sites.PPine,...
+            UNM_sites.MCon_SS }
+        
+        [swc_vars swc_idx] = regexp_header_vars( T_soil_rbd, 'SWC_[A-Z]\d_\d(?!\d).+(tcor)' );
+        
+        [soilt_vars soilt_idx] = regexp_header_vars( T_soil_rbd, 'TCAV_|tcav' );
+        [shf_vars shf_idx] = regexp_header_vars( T_soil_rbd, 'SHF_' );
+        Sites without TCAV will need to have shallow probes averaged
+    case { UNM_sites.PJ, UNM_sites.PJ_girdle, UNM_sites.TestSite }
+        if year == 2009
+            [swc_vars swc_idx] = regexp_header_vars( T_soil_rbd,  'SWC_[A-Z]\d_[2p5|5]_[A-Za-z]' );
+            
+            % Grab 5 cm SOILT for TCav
+            [soilt_vars soilt_idx] = regexp_header_vars( T_soil_rbd, 'SOILT_[A-Z]\d_[5](?!\d)' );
+            soilt_subset = T_soil_rbd(:,soilt_idx);
+            [shf_vars shf_idx] = regexp_header_vars( T_soil_rbd, 'SHF_' );
+            
+            % ------------ TCAV APPROXIMATION FOR PJ SITES
+            cover_cell = {'P','J','O','G'};
+            soilt_avg = table();
+            
+            %         Loop through cover types and pits with HFPs to get an average of
+            %         the shallow temperatures
+            for i = 1:4 % cover type
+                for j = 1:3 % pits
+                    re = strcat( cover_cell{ i } , num2str(j) );
+                    % Get index
+                    pit_chunk_idx = find(~cellfun( @isempty , regexp(soilt_vars, re)));
+                    if ~isempty(pit_chunk_idx)
+                        pit_chunk = soilt_subset(:,pit_chunk_idx);
+                        pit_avg = nanmean( table2array( pit_chunk ), 2);
+                        pit_avg = array2table( pit_avg , 'VariableNames', ...
+                            { strcat( 'TCAV_', re , '_AVG' ) } );
+                        soilt_avg = [soilt_avg, pit_avg ] ;
+                    end
+                end
+            end
+            T_soil_rbd(:,tcav_idx) = [];
+            T_soil_rbd = [T_soil_rbd, soilt_avg];
+            [tcav_vars tcav_idx] = regexp_header_vars( T_soil_rbd, 'TCAV_' );
+        end
+end
 % --------- Calculate Heat Flux ------------
 % Parameters
 SHF_pars = struct ('bulk', 1600,...  % bulk density of soil [ kg / m^3 ]
