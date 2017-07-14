@@ -183,6 +183,7 @@ switch sitecode
                 % Maybe some IRGA problem, screen [CO2] but it
                 % didn't look like it affects fluxes.
                 CO2_mean( 1: DOYidx( 19.45 ) ) = NaN;
+                % Why are we screening these?
                 CO2_mean( DOYidx( 78 ) : DOYidx( 175 ) ) = NaN;
 
             case 2014
@@ -191,6 +192,8 @@ switch sitecode
                 CO2_mean( DOYidx( 105 ) : DOYidx( 122.5 ) ) = NaN;
                 % The bad H2O IRGA was here (0922) from 5/2 to 10/31
                 % Do something!?!?
+            case 2016 
+                vpd(vpd < 0 ) = NaN;
         end
                 
     case UNM_sites.PJ_girdle
