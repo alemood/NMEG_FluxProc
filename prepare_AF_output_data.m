@@ -136,9 +136,9 @@ if ~strcmpi(vers,'aflx')
 else
     vpd_unit = {'hPa'}
 end
-amflx_gf = add_cols( amflx_gf, VPD_f, { 'VPD_F' }, { 'kPa' }, VPD_flag );
-amflx_gaps = add_cols( amflx_gaps, VPD, { 'VPD' }, { 'kPa' } );
-amflx_gaps = add_cols( amflx_gaps, VPD_f, { 'VPD_F' }, { 'kPa' } );
+amflx_gf = add_cols( amflx_gf, VPD_f, { 'VPD_F' }, vpd_unit, VPD_flag );
+amflx_gaps = add_cols( amflx_gaps, VPD, { 'VPD' }, vpd_unit );
+amflx_gaps = add_cols( amflx_gaps, VPD_f, { 'VPD_F' }, vpd_unit );
 
 % Rg - pyrranometer
 Rg_flag = verify_gapfilling( pt_tbl.Rg_f, qc_tbl.sw_incoming, 1e-1, ignore_partitioner );
