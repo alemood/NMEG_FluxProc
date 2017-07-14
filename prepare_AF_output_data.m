@@ -128,9 +128,14 @@ amflx_gaps = add_cols( amflx_gaps, qc_tbl.rH, { 'RH' }, { '%' } );
 amflx_gaps = add_cols( amflx_gaps, pt_tbl.rH, { 'RH_F' }, { '%' });
 % VPD
 VPD_flag = verify_gapfilling( pt_tbl.VPD_f, qc_tbl.VPD, 1e-3 ,ignore_partitioner);
-% Convert to kPa
-VPD = qc_tbl.VPD ./ 10;
-VPD_f = pt_tbl.VPD_f ./ 10;
+% Convert to kPa if not sending to Ameriflux
+if ~strcmpi(vers,'aflx')
+    VPD = qc_tbl.VPD ./ 10;
+    VPD_f = pt_tbl.VPD_f ./ 10;
+    vpd_unit = { 'kPa' };
+else
+    vpd_unit = {'hPa'}
+end
 amflx_gf = add_cols( amflx_gf, VPD_f, { 'VPD_F' }, { 'kPa' }, VPD_flag );
 amflx_gaps = add_cols( amflx_gaps, VPD, { 'VPD' }, { 'kPa' } );
 amflx_gaps = add_cols( amflx_gaps, VPD_f, { 'VPD_F' }, { 'kPa' } );
