@@ -52,10 +52,8 @@ switch radPotSource
         day_flag = swinpot2{:,3} ~= 0;
 end
 
-
 % Save raw SW data for plotting
 sw_in_old = sw_incoming;
-
 
 % Remove negative nighttime values
 neg_idx = find(sw_incoming < 0);
@@ -63,7 +61,6 @@ sw_incoming( neg_idx) = 0;
 % Remove positive nighttime values.
  night_idx = find(sw_incoming > 0 & ~day_flag);
  sw_incoming( night_idx ) = 0;
-
 
 % Apply tolerance
 switch radPotSource
@@ -75,9 +72,7 @@ end
 bad_idx = find(difftest > tol);
 sw_incoming(bad_idx) = NaN;
 
-
 idx = unique([bad_idx;neg_idx;night_idx]);
-
 
 % Plot removed data
 ts =  datenum( year_arg, 1, 1, 0, 30, 0 ):1/48: datenum(year_arg, 12 ,31,24,0,0);
@@ -86,4 +81,3 @@ h_fig = ...
 plot(ts,yr_swinpot,ts,swinpot2{:,3},':',ts,sw_incoming,'.',ts(idx),sw_in_old(idx),'og');
 legend('SW_{in,pot}','SW_{in,aflx}','SW_{in,measured}','removed')
 datetick;dynamicDateTicks
-
