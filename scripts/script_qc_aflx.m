@@ -2,10 +2,10 @@ clear all; close all
 site = UNM_sites.PJ;
 siteVars = parse_yaml_config(site,'SiteVars');
 aflx_site = siteVars.ameriflux_name;
-yearlist = 2016;
+yearlist = 2012;
 % QC Parameters
 write_qc = true;
-write_gf = false;
+write_gf = true;
 % Ameriflux Paramaeters
 make_daily = false;
 write_files = true;
@@ -14,14 +14,14 @@ process_soil = false;
 version = 'aflx';  %'in_house';  
 partmethod = 'eddyproc';
 % QC Issue
-qc_issue = 'ustar_night';
+qc_issue = 'ts_shift';
 
 
 for i = 1:length(yearlist)
     year = yearlist(i);
     
     
-    UNM_RemoveBadData(site, year, 'draw_plots',0, ...
+    UNM_RemoveBadData(site, year, 'draw_plots',3, ...
         'write_QC', write_qc, 'write_GF', write_gf, ...
         'old_fluxall', old_fluxall);
     
@@ -39,13 +39,25 @@ for i = 1:length(yearlist)
     fname = sprintf('%s_%d.csv',aflx_site,year);
     SWfile = fullfile(AMPdir,fname);
     sw_data = text_2_table(SWfile,'n_header_lines',1);
-    
+ %%   
     % Load new ameriflux data
     aflx_data = ...
         text_2_table(...
         sprintf('C:\\Research_Flux_Towers\\FluxOut\\%s_HH_%d01010000_%d01010000.csv',...
         aflx_site,year,year+1),...
         'n_header_lines',1);
+    aflx_data.timestamp = [datenum(year,1,1,0,30,0):1/48:datenum(year,12,31,24,0,0)]'; 
+    aflx_data.Properties.VariableUnits(:) = {'--'};
+    aflx_data = replace_badvals(aflx_data,-9999,1);
+
+    h_viewer = fluxraw_table_viewer(aflx_data, site, ...
+                now);
+            figure( h_viewer );  % bring h_viewer to the front
+            waitfor( h_viewer );
+            clear('fluxraw');
+            
+            %%
+            
     switch qc_issue
         case 'ts_shift'
             aflx_data.SW_IN;

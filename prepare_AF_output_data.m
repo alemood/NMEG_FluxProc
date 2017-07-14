@@ -134,7 +134,9 @@ if ~strcmpi(vers,'aflx')
     VPD_f = pt_tbl.VPD_f ./ 10;
     vpd_unit = { 'kPa' };
 else
-    vpd_unit = {'hPa'}
+    VPD = qc_tbl.VPD;
+    VPD_f = pt_tbl.VPD_f;
+    vpd_unit = {'hPa'};
 end
 amflx_gf = add_cols( amflx_gf, VPD_f, { 'VPD_F' }, vpd_unit, VPD_flag );
 amflx_gaps = add_cols( amflx_gaps, VPD, { 'VPD' }, vpd_unit );
