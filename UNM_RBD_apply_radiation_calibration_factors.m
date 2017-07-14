@@ -455,7 +455,43 @@ switch sitecode
 %             sw_outgoing( early_year_is_night & ( abs( sw_incoming ) > 5 ) ) = NaN;
 %             Par_Avg( early_year_is_night & ( abs( sw_incoming ) > 5 ) ) = NaN;
             
-        elseif year_arg >= 2009 & year_arg <= 2013
+        elseif year_arg == 2009 
+            % Calibrate par-lite installed on 2/11/08
+            Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            out_idx = find(R >= prctile(R,1.6));
+            Par_Avg(out_idx) = NaN;
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+            
+        elseif year_arg == 2010
+            % Calibrate par-lite installed on 2/11/08
+            Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            out_idx = find(R >= prctile(R,1.6) );
+            figure;gscatter(sw_incoming,Par_Avg,R >= prctile(R,1.6)  );
+            Par_Avg(out_idx) = NaN;
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2011
+            % Calibrate par-lite installed on 2/11/08
+            Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+           figure; gscatter(sw_incoming,Par_Avg,R >= prctile(R,1.6)  );
+           Par_Avg(out_idx) = NaN;
+            out_idx = find(R >= prctile(R,1.6));
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2012
+            % Calibrate par-lite installed on 2/11/08
+            Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            figure;gscatter(sw_incoming,Par_Avg,R >= prctile(R,1.6)  );   
+            out_idx = find(R >= prctile(R,1.6) );
+            Par_Avg(out_idx) = NaN;
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2013
             % Calibrate par-lite installed on 2/11/08
             Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
             % Temperature correction just for long-wave
