@@ -337,7 +337,7 @@ data_amended.amended_flag = flag;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Quick fix to include filled precip in ameriflux files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[precip_col, ~ ] = regexp_header_vars(data_in,'P(?!\w)');
+[precip_col, ~ ] = regexp_header_vars(data_in,'P(?!\w)|Precip');
 if isempty(precip_col)
     fprintf('Partitioned file does not have precip data\n')
     precip_T = parse_forgapfilling_file(site,yr,'use_filled',true);
