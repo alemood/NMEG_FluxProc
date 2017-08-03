@@ -245,9 +245,7 @@ keenan = false;
 % FIXME - Have to wrangle all those files timestamps into beginning on the
 % half hour past new years eve of the given year and ending at midnight of
 % the Jan 1 of the folling year. For now
-warning('Once t_start and t_end are dealth with in code, remove this line')
-% pt_tbl = table_fill_timestamps( pt_tbl, 'timestamp', ...
-%     't_min', Jan1, 't_max', Dec31 );
+
 % create the variables to be written to the output files
 [ amflux_gaps, amflux_gf ] = ...
     prepare_AF_output_data( ...

@@ -724,7 +724,7 @@ methods
         end
 
         fprintf( 'writing %s\n', full_fname );
-        write_table_std( full_fname, fluxall_data )
+        write_table_std( full_fname, fluxall_data );
 
     end   % write_fluxall
 
