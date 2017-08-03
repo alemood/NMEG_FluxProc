@@ -66,8 +66,11 @@ switch sitecode
                 % Pretty sure the precip gauge was not functioning up until
                 % Aug 30
                 precip( 1 : DOYidx( 244 ) ) = NaN;
-                % Dont see problem here - GEM
-                %sw_incoming( DOYidx( 7 ) : DOYidx( 9 ) ) = NaN;
+                % Spike in air temp
+                idx = ...
+                    DOYidx(datenum( year, 10 , 15, 3, 30 , 0 ) - datenum(year,1,0)):...
+                    DOYidx(datenum( year, 10 , 15, 8, 0 , 0 ) - datenum(year,1,0));
+                Tdry(idx) = NaN;
                 
             case 2010
                 % IRGA problems - seems to affect latent only
@@ -111,6 +114,11 @@ switch sitecode
                 % WTF? - GEM
                 idx = DOYidx( 131.6 ) : DOYidx( 164.6 );
                 CO2_mean( idx ) = CO2_mean( idx ) + 10.0;
+            case 2013
+                % Spike in SW_OUT that seems unrealistic
+                idx = DOYidx(52.3542):DOYidx(52.6250);
+                sw_outgoing(idx) = NaN;
+             
         end
         
     case UNM_sites.SLand
@@ -162,6 +170,16 @@ switch sitecode
                 Tdry( ( Tdry < C_to_K( -8 ) ) & ( doy > 37 ) & ( doy < 38 ) ) = NaN;
                 vpd( ( Tdry < C_to_K( -10 ) ) & ( doy > 75 ) & ( doy < 150 ) ) = NaN;
                 vpd( ( Tdry < C_to_K( -8 ) ) & ( doy > 37 ) & ( doy < 38 ) ) = NaN;
+            case 2014
+                idx = rH < 0.15;
+                idx(1:DOYidx(182))= false;
+                rH( idx ) = NaN;
+            case 2015
+                idx = rH < 0.15;
+                rH( idx ) = NaN;
+            case 2016
+                idx = rH < 0.15;
+                rH( idx ) = NaN;
         end
         
     case UNM_sites.PJ
@@ -309,6 +327,10 @@ switch sitecode
         
     case UNM_sites.MCon
         switch year
+            case 2007
+                % There is NO CNR1 data for this year. We can fill this
+                % with the Redondo station
+                fillData = parse_fluxall_qc_file(UNM_sites.MCon,2007);
             case 2009
                 % FIXME - Explanation?
                 % I think this is unnecessary - GEM
