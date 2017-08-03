@@ -148,6 +148,13 @@ amflx_gf = add_cols( amflx_gf, pt_tbl.Rg_f, ...
                      { 'SW_IN_F' }, { 'W/m2' }, Rg_flag ); %SW_IN_F
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.sw_incoming, ...
                        { 'SW_IN' }, { 'W/m2' } );
+% MCon has no radiation data in 2007. We are filling at                    
+if isnan(amflx_gaps.SW_IN)
+    data = [pt_tbl.timestamp,pt_tbl.Rg_f]; 
+    data = shift_data( data, 1.0, 2 );
+    amflx_gaps.SW_IN = data(:,2);  
+    
+end
 % Make sure original NETRAD is nan in these locations also
 qc_tbl.NR_tot( Rg_flag ) = nan;
 
@@ -166,7 +173,7 @@ P_flag = NaN( height(pt_tbl) , 1 );
 amflx_gf = add_cols( amflx_gf, qc_tbl.precip, ... % P_F
     { 'P_F' }, { 'mm' }, P_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
-%amflx_gaps = add_cols( amflx_gaps, pt_tbl.P, { 'P_F' }, { 'mm' } );
+amflx_gaps = add_cols( amflx_gaps, pt_tbl.P, { 'P_F' }, { 'mm' } );
 
 end
 
