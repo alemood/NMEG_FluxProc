@@ -346,9 +346,15 @@ switch sitecode
                 %    shift_data( data( shiftIdx, : ), 0.5, allCols );
                 
             case 2013
-                shiftIdx = 1 : DOYidx( 58.542 );
+%                shiftIdx = 1 : DOYidx( 58.542 );
+%                 data( shiftIdx, : ) = ...
+%                     shift_data( data( shiftIdx, : ), 0.5 , allCols );
+                shiftIdx = DOYidx( 18.1458) : DOYidx( 58.542 );
                 data( shiftIdx, : ) = ...
-                    shift_data( data( shiftIdx, : ), 0.5, allCols );
+                    shift_data( data( shiftIdx, : ), 0.5 , allCols );
+%                 shiftIDX = 1: DOYidx(13);
+%                 data( shiftIdx, : ) = ...
+%                     shift_data( data( shiftIdx, : ), -1.5 , allCols );
                 % Small clock reset
                 shiftIdx = DOYidx( 58.562 ) : size( data, 1 );
                 data( shiftIdx, : ) = ...
