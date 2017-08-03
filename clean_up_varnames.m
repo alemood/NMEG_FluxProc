@@ -49,9 +49,12 @@ clean_names = regexprep( clean_names, '([0-9])\.([0-9])', '$1p$2' );
 % replace % with prcnt
 clean_names = regexprep( clean_names, '\%','prcnt');
 % replace 2nd '_mean' with '_mean2'
-if numel(clean_names) > 174;
-clean_names{175} = 'mean2';
-end
+% FIXME - this was a kludge to fix duplicated names when eddypro files were
+% added to the fluxall. This may break!
+warning('~~~~~ If horizontal table concatentation fails, fix code here! ~~~')
+% if numel(clean_names) > 174;
+% clean_names{175} = 'mean2';
+% end
 % remove trailing whitespace, 
 clean_names = deblank(clean_names); 
 %remove tabs
