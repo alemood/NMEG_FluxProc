@@ -174,8 +174,14 @@ if write_output
         'processed_flux', ...
         sprintf( '%s_flux_all_%d_for_gap_filling_filled.txt', ...
         get_site_name( sitecode ), year ) );
+    if exist( outfile )
+        bak_fname = regexprep( outfile, '\.txt', '_bak.txt' );
+        fprintf( 'backing up %s\n', outfile );
+        [copy_success, msg, msgid] = copyfile( outfile, ...
+            bak_fname );
+    end
     fprintf( 'writing %s\n', outfile );
- %   thisData.timestamp = [];
+    %   thisData.timestamp = [];
     write_table_std( outfile, thisData, 'write_units', true );
 end
 

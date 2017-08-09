@@ -12,10 +12,10 @@
 % author: Alex Moody, UNM, July 2017
 
 clear all; close all
-site = UNM_sites.MCon_SS;
+site = UNM_sites.PPine;
 siteVars = parse_yaml_config(site,'SiteVars');
 aflx_site = siteVars.ameriflux_name;
-yearlist= 2016;
+year= 2007;
 % QC Parameters
 write_qc = false;
 write_gf = false;
@@ -25,14 +25,10 @@ write_files = true;
 old_fluxall = false;
 process_soil = false;
 version = 'aflx';  %'in_house';
-partmethod = 'eddyproc';
+partmethod = 'old_eddyproc';
 do_qc =false;
 %%
-for i = 1:length(yearlist)
-    year = yearlist(i);
-    if do_qc
-
-UNM_RemoveBadData(site, year, 'draw_plots',2, ...
+UNM_RemoveBadData(site, year, 'draw_plots',0, ...
    'write_QC', write_qc, 'write_GF', write_gf, ...
    'old_fluxall', old_fluxall);
 %%
@@ -45,15 +41,8 @@ UNM_Ameriflux_File_Maker( site, year, ...
     'process_soil_data', process_soil,...
     'version', version , ...
     'gf_part_source', partmethod);
-    end
+  
 
-  %%
-UNM_Ameriflux_File_Maker( site, year, ...
-    'write_files', write_files, ...
-    'write_daily_file', make_daily, ...
-    'process_soil_data', process_soil,...
-    'version', version , ...
-    'gf_part_source', partmethod);
 %%   
 % Load new ameriflux data
 aflx_data = ...
@@ -69,7 +58,7 @@ aflx_data = replace_badvals(aflx_data,-9999,1);
 h_viewer = fluxraw_table_viewer(aflx_data, site, ...
     now);
 figure( h_viewer );  % bring h_viewer to the front
-waitfor( h_viewer );
+%waitfor( h_viewer );
 clear('fluxraw');
             
 %%
@@ -93,7 +82,7 @@ plot(ts(idx),aflx_data.SW_IN(idx),'ok','MarkerFaceColor',[ 0 1 .1])
 legend('SW_{in,pot}','SW_{in,meas}','SW_{in,meas} > SW_{in,pot}')
 datetick;dynamicDateTicks
 
-waitfor( h1 );
+%waitfor( h1 );
               
 %%
 FCflagday = find(aflx_data.FC ~= -9999 & aflx_data.SW_IN ~= 0);
@@ -115,7 +104,5 @@ title('nighttime')
 
 waitfor(h2)
 
-close all
-end
 
 

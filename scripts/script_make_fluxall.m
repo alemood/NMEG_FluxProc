@@ -8,10 +8,10 @@ sitelist = {UNM_sites.MCon, UNM_sites.SLand, UNM_sites.JSav, ...
     UNM_sites.GLand, UNM_sites.PPine, UNM_sites.PJ_girdle, UNM_sites.PJ, ...
     UNM_sites.PJ_girdle};
 
-sitelist = {UNM_sites.SLand};
-yearlist = 2015;%2013:2014;% 2009:2013;
+sitelist = {UNM_sites.PJ};
+yearlist = 2009;%2013:2014;% 2009:2013;
 
-proc_10hz =false;
+proc_10hz = false;
 proc_10hz_ep = false;
 count = 1;
 for i = 1:length(sitelist);
