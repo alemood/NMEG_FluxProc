@@ -144,11 +144,13 @@ switch site
 %         idx = DOYidx( 323.2 ) : DOYidx( 329.0 );
 %         data_amended.Reco_HBLR_amended( idx ) = ...
 %             norm( data_in.Reco_HBLR( idx ), 5.6 );
-        idx = DOYidx( 337.25 ) : DOYidx( 340.8 );
-        data_amended.Reco_HBLR_amended( idx ) = ...
-            norm( data_in.Reco_HBLR( idx ), 4.2 );
-        dfig = plot_amended( data_in, data_amended, ...
-              'Reco_HBLR', site, yr );
+
+% New Reddyproc (2017) does not have this high respiration
+%         idx = DOYidx( 337.25 ) : DOYidx( 340.8 );
+%         data_amended.Reco_HBLR_amended( idx ) = ...
+%             norm( data_in.Reco_HBLR( idx ), 4.2 );
+%         dfig = plot_amended( data_in, data_amended, ...
+%               'Reco_HBLR', site, yr );
     end
         
   case UNM_sites.MCon
