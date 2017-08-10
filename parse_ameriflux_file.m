@@ -22,21 +22,21 @@ function amflux_tab = parse_ameriflux_file( fname , varargin)
 
 args = inputParser;
 args.addRequired( 'fname', @ischar );
-args.addParameter( 'version', 'in_house', @ischar);
+args.addParameter( 'version', 'NMEG', @ischar);
 
 args.parse( fname, varargin{ : } );
 
 fname = args.Results.fname;
 version = args.Results.version;
 
-% if strcmp(version,'in_house')
+% if strcmp(version,'NMEG')
 %     headerlines = 6;
 % else
 %     headerlines = 0;
 % end
 
 switch version
-    case 'in_house' 
+    case 'NMEG' 
         headerlines = 6;
     case 'daily'
         headerlines = 6;
@@ -57,7 +57,7 @@ var_names = regexp( var_names, delim, 'split' );
 var_names = cellfun( @char, var_names, 'UniformOutput',  false );
 var_names = cellfun( @genvarname, var_names, 'UniformOutput',  false );
 
-if strcmp(version,'in_house')
+if strcmp(version,'NMEG')
 var_units = fgetl( fid );
 var_units = regexp( var_units, delim, 'split' );
 var_units = cellfun( @char, var_units, 'UniformOutput',  false );
@@ -71,6 +71,6 @@ data =  replace_badvals( data, [ -9999 ], 1e-10 );
 fclose( fid );
 
 amflux_tab = array2table( data, 'VariableNames', var_names );
-if strcmp( version , 'in_house' )
+if strcmp( version , 'NMEG' )
 amflux_tab.Properties.VariableUnits =  var_units;
 end
