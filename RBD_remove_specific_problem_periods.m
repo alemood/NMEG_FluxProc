@@ -263,11 +263,12 @@ switch sitecode
                 CO2_mean( idx ) = CO2_mean( idx ) - 16;
                 idx = DOYidx( 205 ) : 17520;
                 CO2_mean( idx ) = CO2_mean( idx ) + 16;
+                                 
             case 2008
                 % There were some IRGA calibration problems during this
                 % time (see logs) and the IRGA was briefly returned to
                 % the lab.
-                idx = DOYidx( 1 ) : DOYidx( 25.8 );
+                idx = DOYidx( 1.0208 ) : DOYidx( 25.8 );
                 CO2_mean( idx ) = CO2_mean( idx ) + 16;
                 idx = DOYidx( 264 ) : DOYidx( 311 );
                 fc_raw_massman_wpl( idx ) = NaN;
@@ -308,6 +309,12 @@ switch sitecode
                 E_wpl_massman( idx ) = NaN;
                 E_raw_massman( idx ) = NaN;
                 E_heat_term_massman( idx ) = NaN;
+                
+                % Bad H2O mean values
+                idx = DOYidx( 26.6250 ):DOYidx( 47.667);
+                idx = [idx, DOYidx( 185.6875 ):DOYidx( 199.6042 ) ];
+                H2O_mean( idx ) = NaN;
+                
             case 2012
                 idx = DOYidx( 319.5 );
                 % beginning here sw sensor reported all zeros and lw sensor
