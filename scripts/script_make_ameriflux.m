@@ -15,7 +15,7 @@
 make_daily = false;
 write_files = true;
 process_soil = false;
-version = 'aflx';  %'in_house';  
+version = 'NMEG'; %'aflx';  % 
 showfig = true;
 
 if ~showfig
@@ -23,17 +23,18 @@ if ~showfig
 end
 
 %for k = 5
- for k = 1
+ for k = 2:2
     switch k
-        case 1
-            sitelist = { UNM_sites.PJ};
-            yearlist = 2008;
-            partmethod = 'old_eddyproc';
+        case 1      
+            sitelist = {  UNM_sites.PJ, UNM_sites.PJ_girdle ,...
+                UNM_sites.PPine, UNM_sites.MCon, UNM_sites.MCon_SS };
+            yearlist = 2017;
+            partmethod = 'eddyproc';
         case 2
             sitelist = { UNM_sites.JSav};
-            yearlist = 2007:2015;
-            partmethod ='old_eddyproc';
-        case 3       
+            yearlist = 2017;
+            partmethod ='eddyproc';
+        case 3
             sitelist = { UNM_sites.PJ,...
                 UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine};
             yearlist = 2016;
@@ -42,7 +43,7 @@ end
             sitelist = {UNM_sites.MCon_SS};
             yearlist = 2016;
             partmethod = 'eddyproc';
-    end            
+    end
 
 for i = 1:length(sitelist);
     %close all;

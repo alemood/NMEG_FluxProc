@@ -12,10 +12,10 @@
 % author: Alex Moody, UNM, July 2017
 
 clear all; close all
-site = UNM_sites.PPine;
-siteVars = parse_yaml_config(site,'SiteVars');
-aflx_site = siteVars.ameriflux_name;
-year= 2007;
+    sitelist = { UNM_sites.PJ,UNM_sites.MCon,UNM_sites.JSav,...
+                UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine};
+
+yearlist= 2014:2016;
 % QC Parameters
 write_qc = false;
 write_gf = false;
@@ -24,32 +24,44 @@ make_daily = false;
 write_files = true;
 old_fluxall = false;
 process_soil = false;
-version = 'aflx';  %'in_house';
-partmethod = 'old_eddyproc';
+version = 'NMEG';  %'in_house';
+partmethod = 'eddyproc';
 do_qc =false;
-%%
-UNM_RemoveBadData(site, year, 'draw_plots',0, ...
-   'write_QC', write_qc, 'write_GF', write_gf, ...
-   'old_fluxall', old_fluxall);
-%%
-UNM_fill_met_gaps_from_nearby_site( site, year, 'write_output', write_gf );
-
-%%
-UNM_Ameriflux_File_Maker( site, year, ...
-    'write_files', write_files, ...
-    'write_daily_file', make_daily, ...
-    'process_soil_data', process_soil,...
-    'version', version , ...
-    'gf_part_source', partmethod);
-  
-
+% %%
+% UNM_RemoveBadData(site, year, 'draw_plots',0, ...
+%    'write_QC', write_qc, 'write_GF', write_gf, ...
+%    'old_fluxall', old_fluxall);
+% %%
+% UNM_fill_met_gaps_from_nearby_site( site, year, 'write_output', write_gf );
+% 
+% %%
+% UNM_Ameriflux_File_Maker( site, year, ...
+%     'write_files', write_files, ...
+%     'write_daily_file', make_daily, ...
+%     'process_soil_data', process_soil,...
+%     'version', version , ...
+%     'gf_part_source', partmethod);
+%   
+for i = 1:length(sitelist)
+    site = sitelist{i};
+    siteVars = parse_yaml_config(site,'SiteVars');
+aflx_site = siteVars.ameriflux_name;
+    for j = 1:length(yearlist)
+        year = yearlist(j);
 %%   
 % Load new ameriflux data
+if strcmpi(version, 'aflx')
+  fstr =  sprintf('C:\\Research_Flux_Towers\\FluxOut\\%s_HH_%d01010000_%d01010000.csv',...
+    aflx_site,year,year+1);
 aflx_data = ...
-    text_2_table(...
-    sprintf('C:\\Research_Flux_Towers\\FluxOut\\%s_HH_%d01010000_%d01010000.csv',...
-    aflx_site,year,year+1),...
+    text_2_table(fstr,...
     'n_header_lines',1);
+elseif strcmpi(version,'NMEG')
+   fstr= sprintf('C:\\Research_Flux_Towers\\FluxOut\\%s_%d_with_gaps.txt',...
+       aflx_site, year);
+   aflx_data = parse_ameriflux_file(fstr,'version','NMEG');
+end
+
 %%
 aflx_data.timestamp = [datenum(year,1,1,0,30,0):1/48:datenum(year,12,31,24,0,0)]';
 aflx_data.Properties.VariableUnits(:) = {'--'};
@@ -58,7 +70,7 @@ aflx_data = replace_badvals(aflx_data,-9999,1);
 h_viewer = fluxraw_table_viewer(aflx_data, site, ...
     now);
 figure( h_viewer );  % bring h_viewer to the front
-%waitfor( h_viewer );
+waitfor( h_viewer );
 clear('fluxraw');
             
 %%
@@ -103,6 +115,9 @@ legend('USTAR(all)','USTAR FC not missing');
 title('nighttime')
 
 waitfor(h2)
+
+    end
+end
 
 
 
