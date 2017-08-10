@@ -36,12 +36,12 @@ args.addRequired( 'sitecode', @(x) ( isnumeric(x) | isa( x, 'UNM_sites' ) ) );
 args.addRequired( 'year', @isnumeric );
 args.addParameter( 'write_files', true, @(x) ( islogical(x) & ...
                                                 numel( x ) ==  1 ) );
-args.addParameter( 'write_daily_files', true, @(x) ( islogical(x) & ...
+args.addParameter( 'write_daily_files', false, @(x) ( islogical(x) & ...
                                                 numel( x ) ==  1 ) );
 args.addParameter( 'process_soil_data', false, @(x) ( islogical(x) & ...
                                                   numel( x ) ==  1 ) );
 args.addParameter( 'gf_part_source', 'eddyproc', @(x) ( isstr(x) ) );
-args.addParameter( 'version', 'in_house', @ischar);
+args.addParameter( 'version', 'NMEG', @ischar);
 args.parse( sitecode, year, varargin{ : } );
 sitecode = args.Results.sitecode;
 year = args.Results.year;
@@ -249,7 +249,7 @@ keenan = false;
 % create the variables to be written to the output files
 [ amflux_gaps, amflux_gf ] = ...
     prepare_AF_output_data( ...
-    sitecode, qc_tbl, pt_tbl, soil_tbl, keenan, version , true );
+    sitecode, qc_tbl, pt_tbl, soil_tbl, keenan, version ,true);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % make a diagnostic plot of partitioning outputs.
@@ -289,7 +289,7 @@ end
 if sitecode==UNM_sites.MCon || ...
         sitecode==UNM_sites.PPine || ...
         sitecode==UNM_sites.MCon_SS
-    if strcmpi(version , 'in_house')
+    if strcmpi(version , 'NMEG')
     amflux_gf.GPP = amflux_gf.GPP_MR2005_ecb;
     amflux_gf.RECO = amflux_gf.RECO_MR2005_ecb;
     amflux_gaps.GPP = amflux_gaps.GPP_MR2005_ecb;
@@ -302,7 +302,7 @@ if sitecode==UNM_sites.MCon || ...
     end
    
 else
-    if strcmpi(version, 'in_house')
+    if strcmpi(version, 'NMEG')
     amflux_gf.GPP = amflux_gf.GPP_GL2010_amended_ecb;
     amflux_gf.RECO = amflux_gf.RECO_GL2010_amended_ecb;
     amflux_gaps.GPP = amflux_gaps.GPP_GL2010_amended_ecb;
@@ -326,28 +326,33 @@ amflux_gf( :, {'GPP_F_MR2005','RECO_MR2005','GPP_GL2010','RECO_GL2010', ...
     'RECO_GL2010_amended', 'amended_FLAG', 'GPP_F_MR2005_FLAG', ...
     'GPP_MR2005_ecb', 'RECO_MR2005_ecb','NEE_MR2005_ecb', ...
     'GPP_GL2010_amended_ecb','RECO_GL2010_amended_ecb', ...
-    'NEE_GL2010_amended_ecb'}) = [];
+    'NEE_GL2010_amended_ecb','SUN_FLAG'}) = [];
 amflux_gaps( :, {'GPP_F_MR2005','RECO_MR2005','GPP_GL2010','RECO_GL2010', ...
     'RECO_GL2010_amended', 'amended_FLAG', 'GPP_MR2005_ecb', ...
     'RECO_MR2005_ecb','NEE_MR2005_ecb', ...
     'GPP_GL2010_amended_ecb','RECO_GL2010_amended_ecb',...
     'NEE_GL2010_amended_ecb'}) = [];
 
+% Add some gapfilled columns 
 if strcmp( version , 'aflx' )
     amflux_gf ( : , {'GPP_PI' , 'RECO_PI' }) = [];
     amflux_gaps ( : , {'GPP_PI' , 'RECO_PI' }) = [];
     amflux_gaps ( : , {'SUN_FLAG' , 'NIGHT'} ) =  [] ;
+    
+    
 end    
 
 if args.Results.write_files
     % Only write gapfilled files for our use
-    if strcmp( version , 'in_house')
+    if strcmp( version , 'NMEG')
         UNM_Ameriflux_write_file( sitecode, year, amflux_gf, ...
             'mlitvak@unm.edu', 'gapfilled' , 'version' , version );
+        UNM_Ameriflux_write_file( sitecode, year, amflux_gaps, ...
+            'mlitvak@unm.edu', 'with_gaps' , 'version' , version );
+    else
+        UNM_Ameriflux_write_file( sitecode, year, amflux_gaps, ...
+            'mlitvak@unm.edu', 'with_gaps' , 'version' , version );
     end
-    
-    UNM_Ameriflux_write_file( sitecode, year, amflux_gaps, ...
-        'mlitvak@unm.edu', 'with_gaps' , 'version' , version );
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

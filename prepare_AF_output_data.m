@@ -42,7 +42,7 @@ args.addRequired( 'sitecode', @(x) ( isintval(x) | isa( x, 'UNM_sites' )));
 args.addRequired( 'qc_tbl', @(x) ( isa( x, 'table' )));
 args.addRequired( 'pt_tbl', @(x) ( isa( x, 'table' )));
 args.addRequired( 'soil_tbl', @(x) ( isa( x, 'table' )));
-args.addOptional( 'version', 'in_house', @ischar);
+args.addOptional( 'version', 'NMEG', @ischar);
 args.addOptional( 'ignore_partitioner' , false);
 
 % parse optional inputs
@@ -82,23 +82,22 @@ dummy = repmat( -9999, size( qc_tbl, 1 ), 1 );
 timestamp = qc_tbl.timestamp; % Will be stripped later 
 % Create an ISO standardized timestamp and convert to numeric.
 % Need to use hig precision when writing this to file.
-if strcmpi(vers,'in_house')
-TIMESTAMP = str2num( datestr( timestamp, 'YYYYmmDDHHMMSS' ));
-[ YEAR, ~, ~ ] = datevec( timestamp );
-DTIME = timestamp - datenum( YEAR, 1, 1 ) + 1;
-amflx_gf = table( timestamp, TIMESTAMP , YEAR, DTIME );
-amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMMSS'...
-    'YYYY', 'DDD.D' };    
-else % AMP/FLUXNET do not require Year and DTIME columns
+    
 TIMESTAMP_END = str2num( datestr( timestamp, 'YYYYmmDDHHMM' ));
 TIMESTAMP_START = str2num( datestr( timestamp - datenum([0,0,0,0,30,0]),...
     'YYYYmmDDHHMM'));
+[ YEAR, ~, ~ ] = datevec( timestamp );
+DTIME = timestamp - datenum( YEAR, 1, 1 ) + 1;
 
-
-amflx_gf = table( timestamp, TIMESTAMP_START, TIMESTAMP_END  );
-amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMM', 'YYYYMMDDHHMM'};
+if strcmpi(vers,'aflx') % AMP/FLUXNET do not require Year and DTIME columns   
+    amflx_gf = table( timestamp, TIMESTAMP_START, TIMESTAMP_END  );
+    amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMM', 'YYYYMMDDHHMM'};    
+elseif strcmpi( vers , 'NMEG' )    
+    amflx_gf = table( timestamp, TIMESTAMP_START, TIMESTAMP_END , ...
+        YEAR, DTIME );
+    amflx_gf.Properties.VariableUnits = { '--', 'YYYYMMDDHHMM','YYYYMMDDHHMM',...
+        'YYYY', 'DDD.D' };    
 end
-
 
 amflx_gaps = amflx_gf;
 
@@ -113,21 +112,65 @@ amflx_gaps = amflx_gf;
 % Tair
 % FIXME - this is sonic temperature (Tdry - 273.15), not hmp
 % temperature. See issue 12. Line below comments is an attempt to fix. 
+
+% VERIFY GAPFILLING
 TA_flag = verify_gapfilling( pt_tbl.Tair_f, qc_tbl.Tdry - 273.15, 1e-3, ignore_partitioner );
+rH_flag = verify_gapfilling( pt_tbl.rH, qc_tbl.rH, 1e-3,ignore_partitioner );
+VPD_flag = verify_gapfilling( pt_tbl.VPD_f, qc_tbl.VPD, 1e-3 ,ignore_partitioner);
+Rg_flag = verify_gapfilling( pt_tbl.Rg_f, qc_tbl.sw_incoming, 1e-1, ignore_partitioner );
+
+% Find the appropriate precip variable names in the partitioned table
+[~ , precip_col] = regexp_header_vars(pt_tbl, '^P$|(^[PpRrEeCcIiPp]$)');
+P_flag = verify_gapfilling( pt_tbl{:,precip_col}, qc_tbl.precip, 1e-4,ignore_partitioner );
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FIXME: for now gapfilling of longwave occurs here
+Lio = model_rad_in( sitecode, timestamp,  pt_tbl.Tair_f, ...
+    qc_tbl.atm_press * 10, pt_tbl.rH,  pt_tbl.Rg_f );
+lw_in_gf = qc_tbl.lw_incoming;
+gf_idx = isnan(lw_in_gf) & pt_tbl.Rg_f >= 25;
+% Fill gaps
+lw_in_gf( gf_idx ) = Lio( gf_idx, 2 );
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Longwave up - pyrgeometer
+LW_IN_flag = verify_gapfilling( lw_in_gf, qc_tbl.lw_incoming, 1e-4 ,ignore_partitioner);
+
+% Net radiation threshold for photosynthetic goings-ons [W m-2]
+PAR_thresh = 20;
+                   
+% Recalculate NETRAD
+if (sitecode==UNM_sites.GLand || sitecode==UNM_sites.SLand) && ...
+        qc_tbl.timestamp(end) < datenum(2008, 01, 01, 0, 30, 0)
+    NETRAD_new =  qc_tbl.NR_tot;
+    NETRAD_flag = false( size( amflx_gf, 1 ), 1 );  
+else
+    NETRAD_new = (  pt_tbl.Rg_f + lw_in_gf ) - ...
+        ( qc_tbl.sw_outgoing + qc_tbl.lw_outgoing );
+    
+    NETRAD_flag = verify_gapfilling( NETRAD_new, qc_tbl.NR_tot, 1e-1,ignore_partitioner );
+end    
+
+    night_flag =  zeros( height( amflx_gaps ) , 1 );
+    night_flag( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
+    night_flag = qc_tbl.Par_Avg < 20;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Add GAPFILLED met and radiation variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+amflx_gf = add_cols( amflx_gf, night_flag, ...
+        { 'NIGHT_F' }, { '--' } );
+    amflx_gaps = add_cols( amflx_gaps, night_flag, ...
+        { 'NIGHT' }, { '--' } );
+    
 amflx_gf = add_cols( amflx_gf, pt_tbl.Tair_f, ...
                      { 'TA_F' }, { 'deg C' }, TA_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.Tdry - 273.15, ...
                        { 'TA' }, { 'deg C' } );
-amflx_gaps = add_cols( amflx_gaps, pt_tbl.Tair_f, ...
-                     { 'TA_F' }, { 'deg C' });
-
 % RH
-rH_flag = verify_gapfilling( pt_tbl.rH, qc_tbl.rH, 1e-3,ignore_partitioner );
 amflx_gf = add_cols( amflx_gf, pt_tbl.rH, { 'RH_F' }, { '%' }, rH_flag );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.rH, { 'RH' }, { '%' } );
-amflx_gaps = add_cols( amflx_gaps, pt_tbl.rH, { 'RH_F' }, { '%' });
+
 % VPD
-VPD_flag = verify_gapfilling( pt_tbl.VPD_f, qc_tbl.VPD, 1e-3 ,ignore_partitioner);
 % Convert to kPa if not sending to Ameriflux
 if ~strcmpi(vers,'aflx')
     VPD = qc_tbl.VPD ./ 10;
@@ -138,137 +181,31 @@ else
     VPD_f = pt_tbl.VPD_f;
     vpd_unit = {'hPa'};
 end
+
+% Precip
+amflx_gf = add_cols( amflx_gf,  pt_tbl{:,precip_col}, ... % P_F
+    { 'P_F' }, { 'mm' }, P_flag );
+amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
+
+
+amflx_gf = add_cols( amflx_gf, NETRAD_new, ...
+                    { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag ); %NETRAD_F
+amflx_gaps = add_cols( amflx_gaps, qc_tbl.NR_tot, { 'NETRAD' }, { 'W/m2' } );
+  
 amflx_gf = add_cols( amflx_gf, VPD_f, { 'VPD_F' }, vpd_unit, VPD_flag );
 amflx_gaps = add_cols( amflx_gaps, VPD, { 'VPD' }, vpd_unit );
-amflx_gaps = add_cols( amflx_gaps, VPD_f, { 'VPD_F' }, vpd_unit );
-
 % Rg - pyrranometer
-Rg_flag = verify_gapfilling( pt_tbl.Rg_f, qc_tbl.sw_incoming, 1e-1, ignore_partitioner );
 amflx_gf = add_cols( amflx_gf, pt_tbl.Rg_f, ...
                      { 'SW_IN_F' }, { 'W/m2' }, Rg_flag ); %SW_IN_F
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.sw_incoming, ...
                        { 'SW_IN' }, { 'W/m2' } );
-% MCon has no radiation data in 2007. We are filling at                    
-if isnan(amflx_gaps.SW_IN)
-    data = [pt_tbl.timestamp,pt_tbl.Rg_f]; 
-    data = shift_data( data, 1.0, 2 );
-    amflx_gaps.SW_IN = data(:,2);  
-    
-end
-% Make sure original NETRAD is nan in these locations also
-qc_tbl.NR_tot( Rg_flag ) = nan;
-
-% Precip
-% Gapfilled precip should be found in MPI files pre 2016. The try/catch
-% statement will deal with 2016+ files, which have no precip (*MRGL*)
-try
-P_flag = verify_gapfilling( pt_tbl.Precip, qc_tbl.precip, 1e-4,ignore_partitioner );
-amflx_gf = add_cols( amflx_gf, pt_tbl.Precip, ... % P_F
-    { 'P_F' }, { 'mm' }, P_flag );
-amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
-amflx_gaps = add_cols( amflx_gaps,  pt_tbl.Precip, ... 
-    { 'P_F' }, { 'mm' });
-catch
-P_flag = NaN( height(pt_tbl) , 1 );
-amflx_gf = add_cols( amflx_gf, qc_tbl.precip, ... % P_F
-    { 'P_F' }, { 'mm' }, P_flag );
-amflx_gaps = add_cols( amflx_gaps, qc_tbl.precip, { 'P' }, { 'mm' } );
-amflx_gaps = add_cols( amflx_gaps, pt_tbl.P, { 'P_F' }, { 'mm' } );
-
-end
 
 
-%%%% % % % % % % % %
-% FIXME: for now gapfilling of longwave occurs here
-
-Lio = model_rad_in( sitecode, timestamp, amflx_gf.TA_F, ...
-    qc_tbl.atm_press * 10, amflx_gf.RH_F, amflx_gf.SW_IN_F );
-lw_in_gf = qc_tbl.lw_incoming;
-gf_idx = isnan(lw_in_gf) & pt_tbl.Rg_f >= 25;
-% Fill gaps
-lw_in_gf( gf_idx ) = Lio( gf_idx, 2 );
-
-% Longwave up - pyrgeometer
-LW_IN_flag = verify_gapfilling( lw_in_gf, qc_tbl.lw_incoming, 1e-4 ,ignore_partitioner);
 amflx_gf = add_cols( amflx_gf, lw_in_gf, ...
                      { 'LW_IN_F' }, { 'W/m2' }, LW_IN_flag ); %LW_IN_F
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.lw_incoming, ...
                        { 'LW_IN' }, { 'W/m2' } );
-                   
-figure();
-plot(timestamp, [ amflx_gf.LW_IN_F, amflx_gaps.LW_IN ] ,'.');
-legend('Filled','Gaps');
-datetick;dynamicDateTicks
-title('LW\_IN');
 
-% Net radiation threshold for photosynthetic goings-ons [W m-2]
-PAR_thresh = 20;
-                   
-% Recalculate NETRAD
-if (sitecode==UNM_sites.GLand || sitecode==UNM_sites.SLand) && ...
-        qc_tbl.timestamp(end) < datenum(2008, 01, 01, 0, 30, 0)
-    NETRAD_flag = false( size( amflx_gf, 1 ), 1 );
-    amflx_gf = add_cols( amflx_gf, qc_tbl.NR_tot, ...
-        { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag );
-    amflx_gaps = add_cols( amflx_gaps, qc_tbl.NR_tot, ...
-        { 'NETRAD' }, { 'W/m2' } );
-%  % Add a flag for daytime, PAR > 20 
-%     day_f = zeros( height( amflx_gf ) , 1 );
-%     day_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
-%     day_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.Par_Avg >= PAR_thresh ) ) = 1;
-%       
-%     amflx_gf = add_cols( amflx_gf, day_f, ...
-%         { 'DAYTIME_F' }, { '--' } ); %NETRAD_F
-%     amflx_gaps = add_cols( amflx_gaps, day_f, ...
-%         { 'DAYTIME' }, { '--' } );
-    
-else
-    NETRAD_new = ( amflx_gf.SW_IN_F + amflx_gf.LW_IN_F ) - ...
-        ( qc_tbl.sw_outgoing + qc_tbl.lw_outgoing );
-    NETRAD_flag = verify_gapfilling( NETRAD_new, qc_tbl.NR_tot, 1e-1,ignore_partitioner );
-    amflx_gf = add_cols( amflx_gf, NETRAD_new, ...
-        { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag ); %NETRAD_F
-    amflx_gaps = add_cols( amflx_gaps, qc_tbl.NR_tot, ...
-        { 'NETRAD' }, { 'W/m2' } );
-    
-    figure();
-    plot(timestamp,...
-        [amflx_gf.NETRAD_F,amflx_gaps.NETRAD], '.');
-    datetick;dynamicDateTicks   
-    title('NETRAD');
-    
-%   %Add a flag for daytime, NETRAD > 0 
-%     day_gf_f =  zeros( height( amflx_gf ) , 1 );
-%     day_gf_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
-%     day_gf_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.Par_Avg > PAR_thresh ) ) = 1;
-%        
-%     day_gaps_f =  zeros( height( amflx_gaps ) , 1 );
-%     day_gaps_f( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
-%     day_gaps_f( find( isfinite( qc_tbl.Par_Avg ) & qc_tbl.NR_tot > PAR_thresh ) ) = 1;
-%              
-%     amflx_gf = add_cols( amflx_gf, day_gf_f, ...
-%         { 'DAYTIME_F' }, { '--' } );
-%     amflx_gaps = add_cols( amflx_gaps, day_gaps_f, ...
-%         { 'DAYTIME' }, { '--' } );
-end
-if exist('pt_tbl.night')
-    night_flag = pt_tbl.night;
-    amflx_gf = add_cols( amflx_gf, night_flag, ...
-        { 'NIGHT_F' }, { '--' } );
-    amflx_gaps = add_cols( amflx_gaps, night_flag, ...
-        { 'NIGHT' }, { '--' } );
-else
-    night_flag =  zeros( height( amflx_gaps ) , 1 );
-    night_flag( find( isnan( qc_tbl.Par_Avg ) ) ) = NaN;
-    night_flag = qc_tbl.Par_Avg < 20;
-     amflx_gf = add_cols( amflx_gf, night_flag, ...
-        { 'NIGHT_F' }, { '--' } );
-    amflx_gaps = add_cols( amflx_gaps, night_flag, ...
-        { 'NIGHT' }, { '--' } );
-end
-
-
-%%%% % % % % % % % %
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Add NON-GAPFILLED met and radiation variables
@@ -280,20 +217,21 @@ end
 %periods.
 PAR_sun = qc_tbl.Par_Avg > 800; %This is an arbitrary threshold
 
-met_nongf = [ qc_tbl.u_star, qc_tbl.wnd_dir_compass, qc_tbl.wnd_spd, ...
-              qc_tbl.atm_press, qc_tbl.Par_Avg, PAR_sun,...%qc_tbl.PAR_out, qc_tbl.NR_tot, qc_tbl.lw_incoming
-              qc_tbl.sw_outgoing, qc_tbl.lw_outgoing ];
-headers = { 'USTAR', 'WD', 'WS', ...
-            'PA', 'PPFD_IN', 'SUN_FLAG' ...%'PAR_out', 'NETRAD_old', 'LW_IN'
-            'SW_OUT', 'LW_OUT' };
-units = { 'm/s', 'deg', 'm/s', ...
-          'kPa', 'mumol/m2/s','--', ...% 'mumol/m2/s', 'W/m2', 'W/m2',...
-          'W/m2', 'W/m2'};
-      
+met_nongf = [  qc_tbl.sw_outgoing, qc_tbl.lw_outgoing, ...
+    qc_tbl.u_star, qc_tbl.wnd_dir_compass, qc_tbl.wnd_spd, ...
+    qc_tbl.atm_press, qc_tbl.Par_Avg, PAR_sun];%qc_tbl.PAR_out, qc_tbl.NR_tot, qc_tbl.lw_incoming
+    
+headers = {  'SW_OUT', 'LW_OUT', ...
+    'USTAR', 'WD', 'WS', ...
+    'PA', 'PPFD_IN', 'SUN_FLAG'}; %'PAR_out', 'NETRAD_old', 'LW_IN'
+   
+units = { 'W/m2', 'W/m2',...
+    'm/s', 'deg', 'm/s', ...
+    'kPa', 'mumol/m2/s','--'}; % 'mumol/m2/s', 'W/m2', 'W/m2',...
+
 % Make table
 met_nongf_tbl = array2table( met_nongf, 'VariableNames', headers );
 met_nongf_tbl.Properties.VariableUnits = units;
-
 % Add to output tables
 amflx_gf = [ amflx_gf, met_nongf_tbl ];
 amflx_gaps = [amflx_gaps, met_nongf_tbl];
@@ -306,7 +244,6 @@ clear headers units;
 
 % Since we having eddyproc conduct ustar filtering, we cannot verify the
 % gapfilling - just use the flag from the eddyproc output
-
 %FC_flag = verify_gapfilling( pt_tbl.NEE_f, qc_tbl.fc_raw_massman_wpl, ...
 %    1e-3 );
 FC_flag = pt_tbl.NEE_fqc > 0;
@@ -324,8 +261,6 @@ end
 LE_flag = pt_tbl.LE_fqc > 0;
 amflx_gf = add_cols( amflx_gf, pt_tbl.LE_f, ...
     { 'LE_F' }, { 'W/m2' }, LE_flag );
-% amflx_gf = add_cols( amflx_gf , pt_tbl.LE_f_unc,...
-%     { 'LE_F_UNC' }, {'W/m2'} );
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.HL_wpl_massman, ...
     { 'LE' }, { 'W/m2' } );
 
