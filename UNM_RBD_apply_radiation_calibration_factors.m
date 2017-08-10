@@ -759,6 +759,7 @@ switch sitecode
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
             % Apply correct calibration value 7.37, SA190 manual section 3-1
             Par_Avg  = Par_Avg .* PAR_LI_old_mult;
+           
             
         elseif year_arg == 2008
             % daytime lw_incoming failed this year - remove it
@@ -782,8 +783,6 @@ switch sitecode
             % daytime lw_incoming failed this year - remove it
             idx = lw_incoming > 5 | sw_incoming > 25;
             lw_incoming( idx ) = nan;
-            fillData = parse_fluxall_qc_file(UNM_sites.MCon,year_arg);
-            lw_incoming_mcon = fillData.lw_incoming;
            
             % CNR1 multiplier was good in these years
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
@@ -791,16 +790,17 @@ switch sitecode
             
             % Fill missing LWin with correlated MCon LWin
             figure;
-            lw_incoming( idx) = 0.84.*lw_incoming_mcon(idx) + 68.19;
             idx = find(isnan(lw_incoming));
-            lw_incoming( idx) = 0.84.*lw_incoming_mcon(idx) + 68.19;
+          %  lw_incoming( idx) = 0.84.*lw_incoming_mcon(idx) + 68.19;
             plot(decimal_day,lw_incoming,'k');hold on
             plot(decimal_day(idx),lw_incoming( idx),'.r')
             legend('Gaps','filled')
-            title('Filled daytime LW_{in}')
+            title('Daytime LW_{in}, linear correlation with MCon')
+            fprintf('PPine LW_in filling not implemented in RBD currently \n')
+            
             % NOTE that there was a CNR2 installed here in late 2012
             % through mid 2013 that never seemed to work.
-            
+            clear fillData lw_incoming_mcon
         elseif year_arg == 2013
             % CNR1 calibration factor was wrong from 11/19/2013 through 
             % 01/15/2014 (it was the old one).
