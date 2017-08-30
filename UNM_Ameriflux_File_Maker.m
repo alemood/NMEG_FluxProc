@@ -182,10 +182,7 @@ end
 % to worry about which variables are in which table
 if strcmp( args.Results.gf_part_source, 'eddyproc' )
     pt_tbl = pt_MRGL_tbl;
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Amend periods where gapfilling fails or is ridiculous
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    pt_tbl = amend_gapfilling_and_partitioning( sitecode, year, pt_tbl );
+  
 elseif strcmp( args.Results.gf_part_source, 'old_eddyproc' )
     cols = setdiff( pt_MR_tbl.Properties.VariableNames, ...
         pt_GL_tbl.Properties.VariableNames );

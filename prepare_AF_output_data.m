@@ -120,7 +120,7 @@ VPD_flag = verify_gapfilling( pt_tbl.VPD_f, qc_tbl.VPD, 1e-3 ,ignore_partitioner
 Rg_flag = verify_gapfilling( pt_tbl.Rg_f, qc_tbl.sw_incoming, 1e-1, ignore_partitioner );
 
 % Find the appropriate precip variable names in the partitioned table
-[~ , precip_col] = regexp_header_vars(pt_tbl, '^P$|(^[PpRrEeCcIiPp]$)');
+[~ , precip_col] = regexp_header_vars(pt_tbl, '^P$|(^[PpRrEeCcIiPp]$)|Precip');
 P_flag = verify_gapfilling( pt_tbl{:,precip_col}, qc_tbl.precip, 1e-4,ignore_partitioner );
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % FIXME: for now gapfilling of longwave occurs here
@@ -306,6 +306,11 @@ part_mat = [ pt_tbl.GPP_f, pt_tbl.Reco, ...
              pt_tbl.GPP_HBLR, pt_tbl.Reco_HBLR, ...
              pt_tbl.Reco_HBLR_amended, pt_tbl.amended_flag ];
 catch % Post-2016 MPI online partitioner files
+    % Kludge to fix lack of amendments to Reddyproc 2017 partitions
+    if ~exist('pt_tbl.Reco_HBLR_amended')
+        pt_tbl.Reco_HBLR_amended = NaN(height(pt_tbl),1);
+        pt_tbl.amended_flag = NaN(height(pt_tbl),1);
+    end
     part_mat = [ pt_tbl.GPP_f, pt_tbl.Reco, ...
              pt_tbl.GPP_DT, pt_tbl.Reco_DT, ...
              pt_tbl.Reco_HBLR_amended, pt_tbl.amended_flag ];
