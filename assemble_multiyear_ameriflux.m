@@ -54,7 +54,11 @@ else
 end
 %releasename = fullfile( getenv( 'FLUXROOT' ), ...
 %        'Ameriflux_files', 'FLUXNET2015');
-
+previous_multiyr = fullfile( getenv( 'FLUXROOT' ),'FluxOut','aflx_aggregator',...
+    [char(sitecode),'_multiyr.mat']);
+if exist(previous_multiyr)
+    load(previous_multiyr);
+else
 for i = 1:numel( years );
     if soil
         fname = sprintf('%s_%d_soilmet_qc_rbd.txt', char(sitecode) , years( i ) );
@@ -89,6 +93,8 @@ for i = 1:numel( years );
             fprintf( 'file does not exist - moving on\n' );
         end
     end
+end
+save(previous_multiyr,'all_data')
 end
 
 % now do some bookkeeping to combine the tables.  Any variables that are
