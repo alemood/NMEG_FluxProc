@@ -4,8 +4,8 @@ clear all;
 sitelist = { UNM_sites.GLand, UNM_sites.SLand, UNM_sites.New_GLand, ...
     UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle ,...
     UNM_sites.PPine, UNM_sites.MCon, UNM_sites.MCon_SS };
-%sitelist = { UNM_sites.GLand, UNM_sites.JSav};%, UNM_sites.SLand, UNM_sites.New_GLand };
-yearlist = [2017];
+sitelist = { UNM_sites.MCon};%, UNM_sites.SLand, UNM_sites.New_GLand };
+yearlist = [2013];
 
 % True, overwrite files; False; do not overwrite
 write_qc = true;
@@ -21,9 +21,9 @@ for i = 1:length(sitelist);
         % nearby site met gap filler  %draw plots == 3
         
         % FIRST RBD
-%         UNM_RemoveBadData(site, year, 'draw_plots',0, ...
-%             'write_QC', write_qc, 'write_GF', write_gf, ...
-%             'old_fluxall', old_fluxall);
+        UNM_RemoveBadData(site, year, 'draw_plots',0, ...
+            'write_QC', write_qc, 'write_GF', write_gf, ...
+            'old_fluxall', old_fluxall);
         
         %   UNM_site_plot_fullyear_time_offsets( site, year );
         
