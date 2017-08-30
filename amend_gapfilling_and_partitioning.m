@@ -206,6 +206,19 @@ switch site
 %         idx = DOYidx( 120 ) : DOYidx( 133 );
 %         data_amended.Reco_HBLR( idx ) = data_in.Reco_HBLR( idx ) .* ...
 %             ( 6 / max( data_in.Reco_HBLR( idx ) ) );
+        case 2013
+            % Remove fire and when sensors were down
+            idx = 5832:15299;
+            data_amended.Reco_HBLR_amended( idx ) = ...
+                NaN;
+            [~, NEEids] = regexp_header_vars(data_amended,'NEE');
+            [~, recoids] = regexp_header_vars(data_amended,'Reco');
+            [~, gppids] = regexp_header_vars(data_amended,'GPP');
+            colids = [NEEids, recoids, gppids];
+            data_amended{idx, colids } = NaN;
+            dfig = plot_amended( data_in, data_amended, ...
+                'Reco_HBLR', site, yr );
+            
     end
     
   case UNM_sites.GLand
@@ -339,20 +352,20 @@ data_amended.amended_flag = flag;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Quick fix to include filled precip in ameriflux files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[precip_col, ~ ] = regexp_header_vars(data_in,'P(?!\w)|Precip');
-if isempty(precip_col)
-    fprintf('Partitioned file does not have precip data\n')
-    precip_T = parse_forgapfilling_file(site,yr,'use_filled',true);
-    [~, colId ] = regexp_header_vars(precip_T,'P(?!\w)');
-    % Run through timestamp filler just in case, though only until we get
-    % these timestamp issues resolved.
-    Jan1 = datenum(yr,1,1,0,30,0);
-    Dec31 = datenum(yr,12,31,24,0,0);
-    precip_T = table_fill_timestamps( precip_T, 'timestamp', ...
-        't_min', Jan1, 't_max', Dec31 );
-    data_amended.Precip = precip_T(:,colId);
-end
-    
+% [precip_col, ~ ] = regexp_header_vars(data_in,'P(?!\w)|Precip');
+% if isempty(precip_col)
+%     fprintf('Partitioned file does not have precip data\n')
+%     precip_T = parse_forgapfilling_file(site,yr,'use_filled',true);
+%     [~, colId ] = regexp_header_vars(precip_T,'P(?!\w)');
+%     % Run through timestamp filler just in case, though only until we get
+%     % these timestamp issues resolved.
+%     Jan1 = datenum(yr,1,1,0,30,0);
+%     Dec31 = datenum(yr,12,31,24,0,0);
+%     precip_T = table_fill_timestamps( precip_T, 'timestamp', ...
+%         't_min', Jan1, 't_max', Dec31 );
+%     data_amended.Precip = precip_T(:,colId);
+% end
+%     
 
 function data_norm = norm( in, norm_to_max )
     minval = min( in );
