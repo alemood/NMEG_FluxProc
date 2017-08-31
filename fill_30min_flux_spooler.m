@@ -70,6 +70,8 @@ if sitecode == 1 % GLand
         %output = fill_30min_flux_processor( output, 1,2012, DOYidx( 226 ), DOYidx( 241 ) );
     elseif year == 2015
         output = fill_30min_flux_processor( output, 1,2015, 5461, 6112 );
+    elseif year == 2017
+        output = fill_30min_flux_processor( output, 1 , 2017, DOYidx(142.6042) , DOYidx(151.4167));
     end
     
 elseif sitecode == 2 % SLand
@@ -101,7 +103,7 @@ elseif sitecode == 2 % SLand
         output = fill_30min_flux_processor( output, 2,2012,17324,17344);
     elseif year == 2013
         % For some reason 1 day/month of 10hz data is missing at this site
-        output = fill_30min_flux_processor( output, 2, 2013, DOYidx(1), DOYidx(2.36));
+        output = fill_30min_flux_processor( output, 2, 2013, DOYidx(1.0208), DOYidx(2.36));
         output = fill_30min_flux_processor( output, 2, 2013, DOYidx(10.68), DOYidx(11.07));
         output = fill_30min_flux_processor( output, 2, 2013, DOYidx(14.81), DOYidx(15.28));
         output = fill_30min_flux_processor( output, 2, 2013, DOYidx(240.48), DOYidx(241.46));
@@ -157,6 +159,8 @@ elseif sitecode == 3 % JSav
         output = fill_30min_flux_processor( output, 3, 2016, DOYidx(199.6), DOYidx(204.46));
         output = fill_30min_flux_processor( output, 3, 2016, DOYidx(204.625), DOYidx(204.67));
         output = fill_30min_flux_processor( output, 3, 2016, DOYidx(204.77), DOYidx(210.36));
+    elseif year == 2017
+         output = fill_30min_flux_processor( output, 3, 2017, DOYidx(163.2292), DOYidx(171.6667));
     end
     
 elseif sitecode == 4 % PJ_control
@@ -358,7 +362,7 @@ elseif sitecode == 6 % MCon
         output = fill_30min_flux_processor( output, 6, 2012, 17229,17259);
         output = fill_30min_flux_processor( output, 6, 2012, 17557,17568);
     elseif year == 2013 % added by Mike Fuller
-        output = fill_30min_flux_processor( output, 6, 2013, DOYidx(1),DOYidx(1.52));
+        output = fill_30min_flux_processor( output, 6, 2013, DOYidx(1.0208),DOYidx(1.52));
         output = fill_30min_flux_processor( output, 6, 2013, DOYidx(29.75),DOYidx(30.33));
         output = fill_30min_flux_processor( output, 6, 2013, DOYidx(52.917),DOYidx(53.458));
         output = fill_30min_flux_processor( output, 6, 2013, DOYidx(324.9),DOYidx(325.375));

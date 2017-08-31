@@ -1,5 +1,5 @@
-%close all;
-%clear all;
+close all;
+clear all;
 
 %sitelist = {UNM_sites.SLand, UNM_sites.JSav, UNM_sites.PJ_girdle,...
 %    UNM_sites.GLand,UNM_sites.New_GLand, UNM_sites.MCon, UNM_sites.PJ,...
@@ -8,8 +8,8 @@ sitelist = {UNM_sites.MCon, UNM_sites.SLand, UNM_sites.JSav, ...
     UNM_sites.GLand, UNM_sites.PPine, UNM_sites.PJ_girdle, UNM_sites.PJ, ...
     UNM_sites.PJ_girdle};
 
-sitelist = {UNM_sites.MCon};
-yearlist = 2017;%2013:2014;% 2009:2013;
+sitelist = {UNM_sites.PJ};
+yearlist = 2009;%2013:2014;% 2009:2013;
 
 proc_10hz = false;
 proc_10hz_ep = false;
@@ -28,10 +28,10 @@ for i = 1:length(sitelist);
 
         if process_10hz
             % Start and end dates for making a new fluxall file
-            date_start = datenum(year, 1, 0, 0, 30, 0);
+            date_start = datenum(year, 12, 31, 23, 30, 0);
             % end at 23:30 when processing tob data (not quite sure why)
             % half hour later other times
-            date_end = datenum(year, 1 , 0, 1 , 0, 0);
+            date_end = datenum(year, 12 , 31, 24 , 0, 0);
             
             % Create a new cdp object.
             % Leave 'data_10hz_already_processed' false.
@@ -52,9 +52,10 @@ for i = 1:length(sitelist);
         
         % Create a new cdp object using correct start dates and set
         % 'data_10hz_already_processed' to true.
-        date_start = datenum(year, 5, 16, 13, 30, 0);
-        date_end = datenum(year, 6 , 12, 9 , 30, 0);
-        
+        date_start = datenum(year, 12, 31, 23, 30, 0);
+        date_end = datenum(year, 12 , 31, 24 , 0, 0);
+
+
         new = card_data_processor(sitecode, 'date_start', date_start,...
             'date_end', date_end, 'data_10hz_already_processed', true,...
             'data_eddypro_already_processed',true);

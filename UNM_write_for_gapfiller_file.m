@@ -111,6 +111,12 @@ if isempty( args.Results.fname )
     fname = tempname();
 else
     fname = args.Results.fname;
+    if exist( fname )
+        bak_fname = regexprep( fname, '\.txt', '_bak.txt' );
+        fprintf( 'backing up %s\n', fname );
+        [copy_success, msg, msgid] = copyfile( fname, ...
+            bak_fname );
+    end
 end
 
 write_table_std( fname, ...

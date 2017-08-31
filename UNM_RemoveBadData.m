@@ -137,6 +137,7 @@ if sitecode == UNM_sites.GLand; % grassland
     LH_min = -150; LH_max = 450;
     rH_min = 0; rH_max = 1;
     h2o_max = 30; h2o_min = 0;
+    press_min = 63; press_max = 107; 
     
     
 elseif sitecode == UNM_sites.SLand; % shrubland
@@ -153,6 +154,7 @@ elseif sitecode == UNM_sites.SLand; % shrubland
     LH_min = -150; LH_max = 450;
     rH_min = 0; rH_max = 1;
     h2o_max = 30; h2o_min = 0;
+    press_min = 63; press_max = 107; 
     
 elseif sitecode == UNM_sites.JSav; % Juniper savanna
     ustar_lim = 0.11;
@@ -169,7 +171,7 @@ elseif sitecode == UNM_sites.JSav; % Juniper savanna
     LH_min = -150; LH_max = 450;
     rH_min = 0; rH_max = 1;
     h2o_max = 30; h2o_min = 0;
-    press_min = 70; press_max = 130;
+    press_min = 63; press_max = 107; 
     
 elseif sitecode == UNM_sites.PJ | sitecode == UNM_sites.TestSite; % Pinyon Juniper
     ustar_lim = 0.22;
@@ -188,6 +190,7 @@ elseif sitecode == UNM_sites.PJ | sitecode == UNM_sites.TestSite; % Pinyon Junip
     h2o_max = 30; h2o_min = 0;
     press_min = 70; press_max = 130;
     co2_max_by_month = [ 2.5, 2.5, 2.5, 3.5, 4, 5, 6, repmat( 6, 1, 5 ) ];
+    press_min = 63; press_max = 107; 
     
 elseif sitecode == UNM_sites.PJ_girdle; % Pinyon Juniper girdle
     ustar_lim = 0.16;
@@ -205,6 +208,7 @@ elseif sitecode == UNM_sites.PJ_girdle; % Pinyon Juniper girdle
     press_min = 70; press_max = 130;
     co2_min_by_month = -10;
     co2_max_by_month = [ 2.5, 2.5, 2.5, 3.5, 4, 5, 6, 6, 6, 4, 4, 4 ];
+    press_min = 63; press_max = 107; 
     %co2_max_by_month = [ 1.5, 1.5, 2, 2, 3, 4, 4, repmat( 6, 1, 5 ) ];
     
 elseif sitecode == UNM_sites.New_GLand; % new Grassland
@@ -221,6 +225,7 @@ elseif sitecode == UNM_sites.New_GLand; % new Grassland
     LH_min = -150; LH_max = 450;
     rH_min = 0; rH_max = 1;
     h2o_max = 30; h2o_min = 0;
+    press_min = 63; press_max = 107; 
     
 elseif sitecode == UNM_sites.PPine; % Ponderosa Pine
     % site default values
@@ -241,6 +246,7 @@ elseif sitecode == UNM_sites.PPine; % Ponderosa Pine
     LH_min = -50; LH_max = 550;
     rH_min = 0; rH_max = 1;
     h2o_max = 30; h2o_min = 0;
+    press_min = 63; press_max = 107; 
     
 elseif sitecode == UNM_sites.MCon; % Mixed conifer
     co2_min_by_month = [ -2.5, -2.5, repmat( -16, 1, 9 ), -2.5 ];%[ -1.5, -1.5, repmat( -12, 1, 9 ), -1.5 ];
@@ -257,6 +263,7 @@ elseif sitecode == UNM_sites.MCon; % Mixed conifer
     rH_min = 0; rH_max = 1;
     h2o_max = 30; h2o_min = 0;
     ustar_lim = 0.2;
+    press_min = 63; press_max = 107; 
 
 elseif sitecode == UNM_sites.MCon_SS; % New Mixed Conifer 
     warning('Filters copied from MCon, adjust for NMCon ');
@@ -280,6 +287,7 @@ elseif sitecode == UNM_sites.MCon_SS; % New Mixed Conifer
     rH_min = 0; rH_max = 1;
     h2o_max = 30; h2o_min = 0;
     ustar_lim = 0.2;
+    press_min = 63; press_max = 107; 
     
 elseif sitecode == UNM_sites.TX;
     ustar_lim = 0.11;
@@ -336,6 +344,7 @@ end
 % filter all sites with this LW_incoming threshold
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 LWin_min = 105;
+LWin_max = 500;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % read the fluxall file
@@ -570,6 +579,10 @@ for i=1:numel( headertext );
             strcmp('RH_36_Avg', headertext{i})==1
         
         rH = data(:,i);
+        if sitecode == 6 & year_arg == 2013
+            [~, idx]=regexp_header_vars(data_orig,'RH_24');
+            rH = data(:,idx);
+        end
         %strcmp('RH_3p7_Avg',headertext{i}) == 1 || ...
         % strcmp('RH_2',headertext{i}) == 1 || ...
         
@@ -738,6 +751,19 @@ if sitecode == 13 & year_arg == 2016
     % above.
     RH_table = [ts_table, RH_table];
         rH = UNM_RBD_calc_rhprofile_mean( RH_table ) ;
+end
+
+% Bad RH values at the 24m HMP. Make regression with 8p75 HMP and fill.
+% Also remove some spikey air temps at 24m HMP
+if sitecode == 6 & year_arg ==2015
+    % rH first
+    idx = find( rH < 0.04 );
+    rH(idx) = NaN;
+    [B,~,R] = regress(rH,[ones(17520,1) data_orig.RH_8p75_Avg]);
+    rH( idx ) = B(2).*data_orig.RH_8p75_Avg(idx) + B(1);
+    % Bad air temp
+    idx = find( air_temp_hmp < -16 | air_temp_hmp > 40 );
+    air_temp_hmp( idx ) = NaN;
 end
 % Calculate VPD in millibars (hPa) using Teten's equation - GEM 5/2015
 % see here:
@@ -935,7 +961,7 @@ elseif sitecode == 5 & year_arg==2013;
     CNR1TempK( idx ) = air_temp_hmp( idx ) + 273.15;
 elseif sitecode == 5 & year_arg==2014;
     CNR1TempK = CNR1TK;
-    idx = [ DOYidx( 1 ):DOYidx( 3.6 ), DOYidx( 83.81 ):DOYidx( 106.36 ) ] ;
+    idx = [ DOYidx( 1.0208 ):DOYidx( 3.6 ), DOYidx( 83.81 ):DOYidx( 106.36 ) ] ;
     CNR1TempK( idx ) = air_temp_hmp( idx ) + 273.15;
 % In 2014 the thermocouple in the CNR1 at NewGLand failed for a while in 
 % the spring. Use air temp.
@@ -981,20 +1007,22 @@ end
 %------------------------------------------------------------------------
 % Check that radiation lines up with solar non and remove negative SW_in
 %------------------------------------------------------------------------
+% if mode(year) < 2017 & sitecode ~= UNM_sites.MCon_SS
+% [ sw_incoming, sw_outgoing, ...
+%     lw_incoming, lw_outgoing, Par_Avg ] = ...
+%     UNM_RBD_remove_bad_radiation_values( sitecode, ...
+%     year_arg, ...
+%     decimal_day, ...
+%     sw_incoming, ...
+%     sw_outgoing, ...
+%     lw_incoming, ...
+%     lw_outgoing, ...
+%     Par_Avg, ...
+%     NR_tot );
+% end
 
-[ sw_incoming, sw_outgoing, ...
-    lw_incoming, lw_outgoing, Par_Avg ] = ...
-    UNM_RBD_remove_bad_radiation_values( sitecode, ...
-    year_arg, ...
-    decimal_day, ...
-    sw_incoming, ...
-    sw_outgoing, ...
-    lw_incoming, ...
-    lw_outgoing, ...
-    Par_Avg, ...
-    NR_tot );
 
-bad_lw_id = find(lw_incoming < LWin_min );
+bad_lw_id = find(lw_incoming < LWin_min | lw_incoming > LWin_max);
 lw_incoming(bad_lw_id) = NaN;
 % 
 % ax(2) = subplot(2,1,2);
@@ -1817,8 +1845,21 @@ HL_wpl_massman( LH_maxmin_flag | LH_night_flag | LH_day_flag ) = NaN;
 Tdry_flag = find(Tdry > Tdry_max | Tdry < Tdry_min);
 removed_Tdry = length(Tdry_flag);
 Tdry(Tdry_flag) = NaN;
+
+% Spiky sonic temperatures at PPine in 2007. Remove big spikes with
+% difference from smoothed curve. FIXME - This should be moved somewhere
+% else. It doesn't work with the current parameters if used in
+% RBD_remove_specific_problem_periods.m
+if year_arg == 2007 & sitecode == UNM_sites.PPine
+Tsmooth =smooth(Tdry,48*1);
+cutoff = 99.8;
+idx = find(abs(Tsmooth-Tdry) > prctile(abs(Tsmooth-Tdry), cutoff));
+Tdry(idx) = NaN;
+end
 % Also remove VPD
 vpd(Tdry_flag) = NaN;
+
+% QC for Tair
 
 % QC for Tsoil
 
@@ -1835,7 +1876,7 @@ removed_h2o = length( find ( h2o_flag ) );
 H2O_mean( h2o_flag ) = NaN;
 
 % QC for atmospheric pressure
-press_flag = []; %find(atm_press > press_max | atm_press < press_min);
+press_flag = find(atm_press > press_max | atm_press < press_min);
 removed_press = length(press_flag);
 atm_press(press_flag) = NaN;
 

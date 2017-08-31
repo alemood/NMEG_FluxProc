@@ -239,14 +239,22 @@ switch sitecode
                 data( clockSet2, : ) = shift_data( ...
                     data( clockSet2, : ), 1.0, allCols );
 
-            case { 2008, 2009, 2010 }
+            case 2008 
                 data = shift_data( data, 1.0, allCols );
-                
+            case 2009
+                data = shift_data( data, 1.5, allCols );
+            case 2010
+                data = shift_data( data, 1.5, allCols );
+%                 
+%                 shiftIdx = 1 : DOYidx( 32 );
+%                 data( shiftIdx, : ) = ...
+%                     shift_data( data( shiftIdx, : ), 0.5, allCols );
+    
             case 2011
                 % Looks like datalogger clock was reset around day 54
                 preClockSet = 1 : DOYidx( 55.395 );
                 data( preClockSet, : ) = ...
-                    shift_data( data( preClockSet, : ), 1.0, allCols );
+                    shift_data( data( preClockSet, : ), 1.5, allCols );
                 % Data for rest of year need to be shifted 1 hours
                 %postClockSet = DOYidx( 55.416 ) : size( data, 1 );
                 %data( postClockSet, : ) = ...
@@ -346,9 +354,15 @@ switch sitecode
                 %    shift_data( data( shiftIdx, : ), 0.5, allCols );
                 
             case 2013
-                shiftIdx = 1 : DOYidx( 58.542 );
+%                shiftIdx = 1 : DOYidx( 58.542 );
+%                 data( shiftIdx, : ) = ...
+%                     shift_data( data( shiftIdx, : ), 0.5 , allCols );
+                shiftIdx = DOYidx( 18.1458) : DOYidx( 58.542 );
                 data( shiftIdx, : ) = ...
-                    shift_data( data( shiftIdx, : ), 0.5, allCols );
+                    shift_data( data( shiftIdx, : ), 0.5 , allCols );
+%                 shiftIDX = 1: DOYidx(13);
+%                 data( shiftIdx, : ) = ...
+%                     shift_data( data( shiftIdx, : ), -1.5 , allCols );
                 % Small clock reset
                 shiftIdx = DOYidx( 58.562 ) : size( data, 1 );
                 data( shiftIdx, : ) = ...

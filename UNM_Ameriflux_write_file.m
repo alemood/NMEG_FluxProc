@@ -22,8 +22,8 @@ function result = UNM_Ameriflux_write_file( sitecode, ...
 %         Default is mlitvak@unm.edu
 %     outdir: char; full path to directory to write ameriflux files to.
 %         Defaults to get_out_directory( sitecode ).
-%     version: char; 'in_house' or 'fluxnet', to specify header
-%         formatting.'in_house' is more verbose, including Git info, units, and
+%     version: char; 'NMEG' or 'fluxnet', to specify header
+%         formatting.'NMEG' is more verbose, including Git info, units, and
 %         partitioning
 %
 % author: Timothy W. Hilton, UNM, 2012
@@ -41,7 +41,7 @@ args.addRequired( 'af_tbl', @(x) isa( x, 'table' ) );
 args.addRequired( 'fname_suffix', @ischar );
 args.addParameter( 'email', 'mlitvak@unm.edu', @ischar );
 args.addParameter( 'outdir', '', @ischar );
-args.addParameter( 'version', 'in_house' , @ischar );
+args.addParameter( 'version', 'NMEG' , @ischar );
 
 args.parse( sitecode, year, af_tbl,  varargin{ : } );
 
@@ -74,7 +74,7 @@ gitInfo = getGitInfo();
 
 sites_info = parse_UNM_site_table();
 aflx_site_name = char( sites_info.Ameriflux( sitecode ) );
-if strcmp(version,'in_house')
+if strcmp(version,'NMEG')
     fname = fullfile( outdir, ...
         sprintf( '%s_%d_%s.txt', ...
         aflx_site_name, ...
@@ -98,7 +98,7 @@ if ~strcmpi(pwd,'A:\Code\NMEG_FluxProc')
     cd('A:\Code\NMEG_FluxProc');
 end
 
-if strcmp(version,'in_house')  
+if strcmp(version,'NMEG')  
 fprintf( fid, 'Site name: %s\n', aflx_site_name );
 fprintf( fid, 'Email: %s\n', email );
 fprintf( fid, 'Created: %s\n', datestr( now() ) );
@@ -116,7 +116,7 @@ var_names = af_tbl.Properties.VariableNames;
 var_names = regexprep( var_names, '([0-9])p([0-9])', '$1\.$2');
 fprintf( fid, fmt, var_names{:} );
 
-if strcmp(version,'in_house')
+if strcmp(version,'NMEG')
 units = af_tbl.Properties.VariableUnits;
 fprintf( fid, fmt, units{:} );
 end

@@ -250,7 +250,7 @@ if strcmp( logger_name, 'flux' )
             catch err
                 fluxdata_convert_success = false;
                 % echo the error message
-                fprintf( 'Error converting 30-minute data to TOA5 file.' )
+                fprintf( 'Error converting 30-minute data to TOA5 file.' );
                 disp( getReport( err ) );
                 main_success = 0;
             end   
@@ -354,17 +354,17 @@ if regexp(logger_name,'soil|precip|sap')
 end
 
 %copy uncompressed TOB1 data to MyBook
-% try 
-%     fprintf(1, '\n----------\n');
-%     fprintf(1, 'COPYING UNCOMPRESSED TOB1 DATA TO MYBOOK...\n');
-%     copy_uncompressed_TOB_files(this_site, ts_data_fnames);
-%     fprintf(1, 'Done copying uncompressed TOB1 data to mybook\n');
-% catch err
-%     % echo the error report
-%     fprintf( 'Error copying uncompressed TOB1 data to MyBook\n' );
-%     disp( getReport( err ) );
-%     fprintf( 'continuing with processing\n' );
-% end
+try 
+    fprintf(1, '\n----------\n');
+    fprintf(1, 'COPYING UNCOMPRESSED TOB1 DATA TO MYBOOK...\n');
+    copy_uncompressed_TOB_files(this_site, ts_data_fnames);
+    fprintf(1, 'Done copying uncompressed TOB1 data to mybook\n');
+catch err
+    % echo the error report
+    fprintf( 'Error copying uncompressed TOB1 data to MyBook\n' );
+    disp( getReport( err ) );
+    fprintf( 'continuing with processing\n' );
+end
 % 
 % %copy uncompressed raw data to Story
 % try
@@ -441,7 +441,7 @@ save( fullfile( getenv( 'FLUXROOT' ), 'FluxOut', ['card_restart_',char(UNM_sites
 %     end
 % --------------------------------------------------
 % the data are now copied from the card and backed up.
-
+%%
 % If this is a flux datalogger card process the data
 if strcmp( logger_name, 'flux' )
     % merge the new data into the fluxall file

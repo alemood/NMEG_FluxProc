@@ -1,15 +1,16 @@
-%close all;
-%clear all;
+close all;
+clear all;
 
 sitelist = { UNM_sites.GLand, UNM_sites.SLand, UNM_sites.New_GLand, ...
     UNM_sites.JSav, UNM_sites.PJ, UNM_sites.PJ_girdle ,...
     UNM_sites.PPine, UNM_sites.MCon, UNM_sites.MCon_SS };
+
 sitelist = { UNM_sites.PPine};%, UNM_sites.SLand, UNM_sites.New_GLand };
 yearlist = 2008;
 
 % True, overwrite files; False; do not overwrite
-write_qc = false;
-write_gf = false;
+write_qc = true;
+write_gf = true;
 old_fluxall = false;
 rungapfiller = false;
 
@@ -21,7 +22,7 @@ for i = 1:length(sitelist);
         % nearby site met gap filler  %draw plots == 3
         
         % FIRST RBD
-        UNM_RemoveBadData(site, year, 'draw_plots',3, ...
+        UNM_RemoveBadData(site, year, 'draw_plots',0, ...
             'write_QC', write_qc, 'write_GF', write_gf, ...
             'old_fluxall', old_fluxall);
         
@@ -46,5 +47,7 @@ for i = 1:length(sitelist);
         % Otherwise, send the resulting for_gapfilling files to
         % the MPI eddyproc web service.
         
+      
+         close all
     end
 end

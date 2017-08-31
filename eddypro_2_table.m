@@ -107,9 +107,18 @@ fmt = repmat( sprintf( '%s%%f', delim ), 1, n_numeric_vars );
 full_line = cellfun( @(x) size( x, 1 ), data ) == n_numeric_vars;
 data = [ data{ find( full_line ) } ]';
 
+% Clean up timestamp units and variable names
+var_units = var_units( 3:end );
 var_names = clean_up_varnames( var_names( 4:end ) );
 
+% There are two columns called mean at the end of the eddypro file that are
+% not needed and that interfere with the combination of the fluxall and
+% eddypro tables.
+idx = find( ~cellfun( @isempty, regexp( var_names, 'mean(?!.)' ) ) );
+data(:,idx) = [];
+var_units(:,idx) = [];
+var_names(:,idx) = [];
 T = array2table( data, 'VariableNames', var_names );
-T.Properties.VariableUnits = var_units( 3:end );
+T.Properties.VariableUnits = var_units;
 % add timestamp
 T.timestamp = dn;

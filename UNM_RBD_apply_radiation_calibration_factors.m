@@ -157,12 +157,15 @@ switch sitecode
         PAR_KZ_old_up_mult = 1000 / PAR_KZ_old_up_sens;
         PAR_LI_old_mult = 1000 / (PAR_LI_old_sens * .604);
         
+          
         if year_arg == 2007
             % Calibration and unit conversion into W per m^2 for 
             % CNR1 variables and adjust for incorrect cal factor in
             % datalogger program
             % For first couple of weeks the program had one incorrect
             % conversion factor (163.666)
+            cnr1_sensitivity = 12.34; % from current program
+            cnr1_mult = 1000 / cnr1_sensitivity;
             idx1 = find(decimal_day >= 150.75 & decimal_day < 162.44);
             sw_incoming( idx1 ) = sw_incoming( idx1 ) ...
                 ./ cnr1_mult_old1 .* cnr1_mult;
@@ -194,7 +197,14 @@ switch sitecode
             Par_Avg(find(decimal_day > 150.729)) = ...
                 Par_Avg(find(decimal_day > 150.729)) * PAR_LI_old_mult;
             
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            out_idx = find(R <= prctile(R,0.6) | R >= prctile(R,99.95));
+            figure;gscatter(Par_Avg,sw_incoming,R <= prctile(R,0.60) | R >= prctile(R,99.95) );
+            Par_Avg(out_idx) = NaN;
+            
         elseif year_arg == 2008
+            cnr1_sensitivity = 12.34;
+            cnr1_mult = 1000 / cnr1_sensitivity;
             % Calibration and unit conversion into W per m^2 for 
             % CNR1 variables and adjust for incorrect cal factor in
             % dataloger program
@@ -209,6 +219,8 @@ switch sitecode
             Par_Avg = Par_Avg * PAR_LI_old_mult;
             
         elseif year_arg >= 2009 && year_arg <= 2013
+            cnr1_sensitivity = 12.34; % from current program
+            cnr1_mult = 1000 / cnr1_sensitivity;
             % Calibration and unit conversion into W per m^2 for 
             % CNR1 variables and adjust for incorrect cal factor in
             % dataloger program
@@ -225,8 +237,10 @@ switch sitecode
             Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
             
         elseif year_arg == 2014
+            cnr1_sensitivity = 12.34; % from current program
+            cnr1_mult = 1000 / cnr1_sensitivity;
             % Calibration added to datalogger programs on 01/17/2014
-            idx = find( decimal_day < 17.5 );
+            idx = 1:787;
             sw_incoming( idx ) = ...
                 sw_incoming(idx) ./ cnr1_mult_old2 .* cnr1_mult;
             sw_outgoing( idx ) = ...
@@ -245,6 +259,12 @@ switch sitecode
             % Fix one spiky period
             idx = decimal_day > 257 & decimal_day < 267 & Par_Avg > 2100;
             Par_Avg(idx) = NaN;
+            
+            % Correlate PPFD and SW_In and remove outliers
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            out_idx = find(R <= prctile(R,1.6) | R >= prctile(R,99.5));
+            figure;gscatter(sw_incoming,Par_Avg,R <= prctile(R,1.6)|R >= prctile(R,99.5)  );
+            Par_Avg(out_idx) = NaN;
         
         elseif year_arg == 2015
             % Temperature correction just for long-wave
@@ -263,10 +283,75 @@ switch sitecode
             idx1 = 1:4962; idx2 = 15428:16962;
             Par_Avg( idx1 ) = fillPAR( idx1 );
             Par_Avg( idx2 ) = fillPAR( idx2 );
+            % CNR1 Swapped on June 22nd but sensitivity wasn't changed in
+             % logger program until June 30th
+            cnr1_sens_old = 9.92; % From logger program Shrub_CR3K_13Apr16.CR3
+            cnr1_mult_old = 1000/cnr1_sens_old;
+            idx = 8329:8702;
+            sw_incoming( idx ) = sw_incoming( idx )./ cnr1_mult_old .* cnr1_mult;
+            sw_outgoing( idx ) = sw_outgoing( idx )./ cnr1_mult_old .* cnr1_mult;
+            lw_incoming( idx ) = lw_incoming( idx )./ cnr1_mult_old .* cnr1_mult;
+            lw_outgoing( idx ) = lw_outgoing( idx )./ cnr1_mult_old .* cnr1_mult;
+            
             % FIXME - drop and use CG3CO vars?
             [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
         elseif year_arg == 2017
             [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );
+        end
+        
+        % ----------------------------------------------------------------
+        % Fix shaded PPFD during morning hours (8-10 AM) in May-August in
+        % 2009-2013. Filling with PPFD_IN from US-Seg 
+        % ----------------------------------------------------------------
+        fill_par_flag = false;
+        if year_arg >= 2009& year_arg <= 2013;fill_par_flag = true;end
+        switch fill_par_flag
+            case true
+            fillData = parse_fluxall_qc_file( UNM_sites.GLand, year_arg);
+
+            % Plot May-August morning values for Par
+            idx = decimal_day >= 121 & decimal_day <= 243;
+            days = 135:30:227;
+            figure;
+            for i = 1:length(days)
+                subset_jday = days(i)-10:days(i)+10;
+                subset_idx = decimal_day>= min(subset_jday) & ...
+                    decimal_day <= max(subset_jday);
+                subset_Seg = fillData(subset_idx,:);
+                subset_Ses = Par_Avg(subset_idx,:);
+                
+                % Accumulate similar times over these days and get the mean
+                [am,~,cm] = unique(subset_Seg{:,4:5},'rows');
+                Seg_Par = [am,accumarray(cm,subset_Seg.Par_Avg,[], @nanmean )];
+                Ses_Par = [am,accumarray(cm,subset_Ses,[], @nanmean)];
+                subplot(2,2,i);
+                    plot( Seg_Par(:,3),':k','DisplayName','Seg'); hold on
+                    plot( Ses_Par(:,3),'o','MarkerFaceColor',[0.3 0.29 0.95],...
+                        'MarkerSize',5);
+                    title( datestr(subset_Seg.timestamp(400),'mmm yyyy'));
+                    xlim([0 48])
+            end
+            % Correlate PPFD and SW_In and remove outliers
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            out_idx = find( (R <= prctile(R,1.3) | R >= prctile(R,99.9)) & ...
+                (fillData.hour <= 10 & fillData.hour >= 8) & ...
+                 (fillData.month >= 5 & fillData.month <= 8));    
+            figure;gscatter(sw_incoming,Par_Avg,R <= prctile(R,1)|R >= prctile(R,99.9)  );
+                title('SW/PAR Linear Model')
+            % If GLand is more than 100 umol greater than SLand, replace
+            % these values
+%             idx = find(fillData.Par_Avg - Par_Avg > 140 & ...
+%                 fillData.hour <= 10 & fillData.hour >= 8 & ...
+%                 fillData.month >= 5 & fillData.month <= 8);
+%             Par_Avg(idx) = fillData.Par_Avg(idx);
+            figure; plot(Par_Avg,':k','DisplayName','All Par'); hold on
+                    plot(out_idx,Par_Avg(out_idx),'og','DisplayName','Ses Removed',...
+                    'MarkerFaceColor',[0.93 0.69 0.13],...
+                    'Marker','o',...
+                    'LineStyle','none',...
+                    'Color','k');
+            Par_Avg(out_idx) = NaN;
+            case false % Just do nothing
         end
         
         %%%%%%%%%%%%%%%%% juniper savanna
@@ -288,6 +373,8 @@ switch sitecode
         PAR_LI_old_mult = 1000 / (PAR_LI_old_sens * .604);
         
         if year_arg == 2007
+            cnr1_sensitivity = 6.9; % from instrument master list - changes in 2014
+            cnr1_mult = 1000 / cnr1_sensitivity;
             % calibration and unit conversion into W per m^2 for CNR1 variables
             % convert into W per m^2
             sw_incoming = sw_incoming ./ cnr1_mult_old .* cnr1_mult;
@@ -300,6 +387,8 @@ switch sitecode
             Par_Avg = Par_Avg .* PAR_LI_old_mult;
             
         elseif year_arg == 2008
+            cnr1_sensitivity = 6.9; % from instrument master list - changes in 2014
+            cnr1_mult = 1000 / cnr1_sensitivity;
             % calibration and unit conversion into W per m^2 for CNR1 variables
             % convert into W per m^2
             sw_incoming = sw_incoming ./ cnr1_mult_old .* cnr1_mult;
@@ -320,6 +409,8 @@ switch sitecode
             Par_Avg( idx ) = Par_Avg( idx ) + 133;
             
         elseif year_arg >= 2009 & year_arg <= 2013
+            cnr1_sensitivity = 6.9; % from instrument master list - changes in 2014
+            cnr1_mult = 1000 / cnr1_sensitivity;
             % calibration and unit conversion into W per m^2 for CNR1 variables
             % convert into W per m^2
             sw_incoming = sw_incoming ./ cnr1_mult_old .* cnr1_mult;
@@ -336,12 +427,34 @@ switch sitecode
                 idx = decimal_day > 20.4 & decimal_day < 33.7;
                 Par_Avg( idx ) = Par_Avg( idx ) + 133;
             end
+            
+            if year_arg == 2011
+                idx = decimal_day >=  346.2083 & decimal_day <= 347.0417;
+                lw_outgoing( idx ) = NaN;
+                idx = [3244:3253,...
+                    4157:4291,...
+                    4343:4364,...
+                    4373:4386,...
+                    4976:5251];
+                lw_outgoing( idx ) = NaN;
+                idx = lw_outgoing < 250;
+                lw_outgoing( idx) = NaN;
+                % Correlate PPFD and SW_In and remove outliers
+%                 [xData, yData] = prepareCurveData( 1:17520, lw_outgoing );
+%                 [fitresult, gof, O] = fit( xData, yData, 'poly3' );
+%                 out_idx = find(O.residuals <= prctile(O.residuals,1.6) | O.residuals >= prctile(O.residuals,99.9));
+%                 figure;gscatter(sw_incoming,Par_Avg,R <= prctile(R,1.6)|R >= prctile(R,99.5)  );
+                
+            end
             % Outgoing longwave was messed up for a couple periods in 2013,
             % remove it.
             if year_arg == 2013
                 idx1 = decimal_day > 185.6 & decimal_day < 205.65;
                 idx2 = decimal_day > 241.45 & decimal_day < 295.5;
                 lw_outgoing( idx1 | idx2 ) = NaN;
+                
+                idx3 = sw_outgoing < -5;
+                sw_outgoing(idx3) = NaN;
             end
             
         elseif year_arg == 2014
@@ -455,7 +568,44 @@ switch sitecode
 %             sw_outgoing( early_year_is_night & ( abs( sw_incoming ) > 5 ) ) = NaN;
 %             Par_Avg( early_year_is_night & ( abs( sw_incoming ) > 5 ) ) = NaN;
             
-        elseif year_arg >= 2009 & year_arg <= 2013
+        elseif year_arg == 2009 
+            % Calibrate par-lite installed on 2/11/08
+            Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            out_idx = find(R <= prctile(R,1.6));
+            Par_Avg(out_idx) = NaN;
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+            
+        elseif year_arg == 2010
+            % Calibrate par-lite installed on 2/11/08
+            Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            out_idx = find(R <= prctile(R,1.6) );
+            figure;gscatter(sw_incoming,Par_Avg,R >= prctile(R,1.6)  );
+            Par_Avg(out_idx) = NaN;
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2011
+            % Calibrate par-lite installed on 2/11/08
+            Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            figure; gscatter(sw_incoming,Par_Avg,R >= prctile(R,1.6)  );
+        
+            out_idx = find(R <= prctile(R,1.6));
+            Par_Avg(out_idx) = NaN;
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2012
+            % Calibrate par-lite installed on 2/11/08
+            Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            figure;gscatter(sw_incoming,Par_Avg,R >= prctile(R,1.6)  );   
+            out_idx = find(R <= prctile(R,1.6) );
+            Par_Avg(out_idx) = NaN;
+            % Temperature correction just for long-wave
+            [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+        elseif year_arg == 2013
             % Calibrate par-lite installed on 2/11/08
             Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
             % Temperature correction just for long-wave
@@ -481,9 +631,21 @@ switch sitecode
             % FIXME - start using CG3CO vars?
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
         elseif year_arg == 2016;
-             
+            % CNR1 020479 was swapped in, but program not loaded until a
+            % few days later.
+            cnr1_sensitivity_old = 9.69; % Prior to  2016-04-22
+            cnr1_mult_old = 1000 / cnr1_sensitivity_old;
+            CNR1idx = find(decimal_day > 113.3750 & decimal_day < 130.3750);
+            sw_incoming(CNR1idx) = sw_incoming(CNR1idx) ./ cnr1_mult_old .* cnr1_mult;
+            sw_outgoing(CNR1idx) = sw_outgoing(CNR1idx) ./ cnr1_mult_old .* cnr1_mult;
+            lw_incoming(CNR1idx) = lw_incoming(CNR1idx) ./ cnr1_mult_old .* cnr1_mult;
+            lw_outgoing(CNR1idx) = lw_outgoing(CNR1idx) ./ cnr1_mult_old .* cnr1_mult;
             % Fixing bad calibration value
             Par_Avg = Par_Avg * (PAR_KZ_new_up_sens / PAR_KZ_AMP_calibrated_up);
+            % Remove outliers
+            [~,~,R] =regress(Par_Avg,[ones(length(sw_incoming),1) sw_incoming]);
+            out_idx = find(R >= prctile(R,99.9) | Par_Avg < - 10 );
+            Par_Avg(out_idx) = NaN;
             % FIXME - drop and use CG3CO vars?
             [lw_incoming, lw_outgoing] = lw_correct( lw_incoming, lw_outgoing );   
         elseif year_arg == 2017;
@@ -597,6 +759,7 @@ switch sitecode
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
             % Apply correct calibration value 7.37, SA190 manual section 3-1
             Par_Avg  = Par_Avg .* PAR_LI_old_mult;
+           
             
         elseif year_arg == 2008
             % daytime lw_incoming failed this year - remove it
@@ -620,13 +783,24 @@ switch sitecode
             % daytime lw_incoming failed this year - remove it
             idx = lw_incoming > 5 | sw_incoming > 25;
             lw_incoming( idx ) = nan;
+           
             % CNR1 multiplier was good in these years
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
             Par_Avg = Par_Avg .* PAR_KZ_old_up_mult;
             
+            % Fill missing LWin with correlated MCon LWin
+            figure;
+            idx = find(isnan(lw_incoming));
+          %  lw_incoming( idx) = 0.84.*lw_incoming_mcon(idx) + 68.19;
+            plot(decimal_day,lw_incoming,'k');hold on
+            plot(decimal_day(idx),lw_incoming( idx),'.r')
+            legend('Gaps','filled')
+            title('Daytime LW_{in}, linear correlation with MCon')
+            fprintf('PPine LW_in filling not implemented in RBD currently \n')
+            
             % NOTE that there was a CNR2 installed here in late 2012
             % through mid 2013 that never seemed to work.
-            
+            clear fillData lw_incoming_mcon
         elseif year_arg == 2013
             % CNR1 calibration factor was wrong from 11/19/2013 through 
             % 01/15/2014 (it was the old one).

@@ -66,8 +66,11 @@ switch sitecode
                 % Pretty sure the precip gauge was not functioning up until
                 % Aug 30
                 precip( 1 : DOYidx( 244 ) ) = NaN;
-                % Dont see problem here - GEM
-                %sw_incoming( DOYidx( 7 ) : DOYidx( 9 ) ) = NaN;
+                % Spike in air temp
+                idx = ...
+                    DOYidx(datenum( year, 10 , 15, 3, 30 , 0 ) - datenum(year,1,0)):...
+                    DOYidx(datenum( year, 10 , 15, 8, 0 , 0 ) - datenum(year,1,0));
+                Tdry(idx) = NaN;
                 
             case 2010
                 % IRGA problems - seems to affect latent only
@@ -111,6 +114,11 @@ switch sitecode
                 % WTF? - GEM
                 idx = DOYidx( 131.6 ) : DOYidx( 164.6 );
                 CO2_mean( idx ) = CO2_mean( idx ) + 10.0;
+            case 2013
+                % Spike in SW_OUT that seems unrealistic
+                idx = DOYidx(52.3542):DOYidx(52.6250);
+                sw_outgoing(idx) = NaN;
+             
         end
         
     case UNM_sites.SLand
@@ -162,6 +170,16 @@ switch sitecode
                 Tdry( ( Tdry < C_to_K( -8 ) ) & ( doy > 37 ) & ( doy < 38 ) ) = NaN;
                 vpd( ( Tdry < C_to_K( -10 ) ) & ( doy > 75 ) & ( doy < 150 ) ) = NaN;
                 vpd( ( Tdry < C_to_K( -8 ) ) & ( doy > 37 ) & ( doy < 38 ) ) = NaN;
+            case 2014
+                idx = rH < 0.15;
+                idx(1:DOYidx(182))= false;
+                rH( idx ) = NaN;
+            case 2015
+                idx = rH < 0.15;
+                rH( idx ) = NaN;
+            case 2016
+                idx = rH < 0.15;
+                rH( idx ) = NaN;
         end
         
     case UNM_sites.PJ
@@ -183,6 +201,7 @@ switch sitecode
                 % Maybe some IRGA problem, screen [CO2] but it
                 % didn't look like it affects fluxes.
                 CO2_mean( 1: DOYidx( 19.45 ) ) = NaN;
+                % Why are we screening these?
                 CO2_mean( DOYidx( 78 ) : DOYidx( 175 ) ) = NaN;
 
             case 2014
@@ -191,6 +210,8 @@ switch sitecode
                 CO2_mean( DOYidx( 105 ) : DOYidx( 122.5 ) ) = NaN;
                 % The bad H2O IRGA was here (0922) from 5/2 to 10/31
                 % Do something!?!?
+            case 2016 
+                vpd(vpd < 0 ) = NaN;
         end
                 
     case UNM_sites.PJ_girdle
@@ -242,11 +263,12 @@ switch sitecode
                 CO2_mean( idx ) = CO2_mean( idx ) - 16;
                 idx = DOYidx( 205 ) : 17520;
                 CO2_mean( idx ) = CO2_mean( idx ) + 16;
+                                 
             case 2008
                 % There were some IRGA calibration problems during this
                 % time (see logs) and the IRGA was briefly returned to
                 % the lab.
-                idx = DOYidx( 1 ) : DOYidx( 25.8 );
+                idx = DOYidx( 1.0208 ) : DOYidx( 25.8 );
                 CO2_mean( idx ) = CO2_mean( idx ) + 16;
                 idx = DOYidx( 264 ) : DOYidx( 311 );
                 fc_raw_massman_wpl( idx ) = NaN;
@@ -287,6 +309,12 @@ switch sitecode
                 E_wpl_massman( idx ) = NaN;
                 E_raw_massman( idx ) = NaN;
                 E_heat_term_massman( idx ) = NaN;
+                
+                % Bad H2O mean values
+                idx = DOYidx( 26.6250 ):DOYidx( 47.667);
+                idx = [idx, DOYidx( 185.6875 ):DOYidx( 199.6042 ) ];
+                H2O_mean( idx ) = NaN;
+                
             case 2012
                 idx = DOYidx( 319.5 );
                 % beginning here sw sensor reported all zeros and lw sensor
@@ -306,6 +334,10 @@ switch sitecode
         
     case UNM_sites.MCon
         switch year
+            case 2007
+                % There is NO CNR1 data for this year. We can fill this
+                % with the Redondo station
+                fillData = parse_fluxall_qc_file(UNM_sites.MCon,2007);
             case 2009
                 % FIXME - Explanation?
                 % I think this is unnecessary - GEM
