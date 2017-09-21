@@ -1,4 +1,4 @@
-function precip_t = total_precip_calculator( t ) 
+function precip_t = total_precip_calculator( t , sitecode, t_start, t_end, varargin ) 
 % TOTAL_PRECIP_CALCULATOR - Converts in/5 minute precipitation data to temperature
 % and wind corrected mm/30 min precipitation. Used at Mixed Conifer and New
 % Mixed Conifer sites.
@@ -11,36 +11,40 @@ function precip_t = total_precip_calculator( t )
 %     t: matlab table containing output tables from CR1000s logging ETI
 %     NOAH II total precip gauge data. Contains variables for calculating
 %     total precip like ActDepth, RefDepth, wind, air temp
-%     tvar1, tvar2: strings containing names of table variables containing
-%         the timestamps in tbl_in1 and tbl_in2.  These timestamps must be matlab
-%         datenum objects.
+%     sitecode: UNM_sites object.
+%     t_start: MATLAB serial date
+%     t_end: MATLAB serial date
 %
 % OUTPUTS
-%     precip_t: corrected precip 
+%     precip_t: corrected precip table to be appended to 
 %
 % SEE ALSO
 %     
-% 
 % author: Alex C Moody, UNM, November 2016
+
+[ this_year, ~, ~ ] = datevec( now() );
+args = inputParser;
+args.addRequired( 't',  @(x) (istable(x)) );
+args.addRequired( 'sitecode', @(x) ( isintval( x ) | isa( x, 'UNM_sites' ) ) );
+args.addRequired( 't_start', @isnumeric );
+args.addRequired( 't_end', @isnumeric );   
+args.addParameter( 'draw_plots', true, ...
+    @(x) ( islogical( x ) & numel( x ) == 1 ) );
+args.parse( t,sitecode, t_start, t_end, varargin{ : } );
+% -----
+
+t = args.Results.t;
+sitecode = args.Results.sitecode;
+t_start = args.Results.t_start;
+t_end = args.Results.t_end;
+draw_plots = args.Results.draw_plots;
+[year, ~ ,~ ] = datevec(t_start);
 
 
 % Initialize some universal variables
-
- tol = 0.254; % precision of ETI NOAH II in mm to screen out noise in stable conditions (+/- 0.01 inches)
- plotfig = true;
- colors = { '.r', '.m', '.b', '.y', '.g', '.c' };
-% Load precip table
-% load(fullfile(getenv('FLUXROOT'),'NOAH_II_precip.mat'));
+ tol = 0.254; % [mm] precision of ETI NOAH II in mm to screen out noise in stable conditions (+/- 0.01 inches)
+ max_30min_precip = 30; % [mm]  How much rain would we expect in a 30 minute period?
  
-% % Get precip table
-%  if exist('t') ~= 1
-%  t = toa5_2_table;
-%  end
-%  
- 
- [y1 , m1 , d1 , h1 , min1 , ~ ] = datevec(t.timestamp(1));
- [y2 , m2 , d2 , h2, min2, ~] = datevec(t.timestamp(end));
-  
  % Start time vector at the beginning of the hour of the first precip
  % record. If the last record is not the beginning of an hour, end at the
  % start of the next hour to include all records.
@@ -49,17 +53,33 @@ function precip_t = total_precip_calculator( t )
  % Mid-hour timestamp reflects
  % 0:05, 0:10, 0:15 , 0:20, 0:25, and 0:30
  
- if min1 > 0 & min1 < 30
+ [y1 , m1 , d1 , h1 , min1 , ~ ] = datevec(t_start);
+ [y2 , m2 , d2 , h2, min2, ~] = datevec(t_end);
+ 
+ if min1 > 0 & min1 <= 30
      sum_start = datenum([ y1 , m1 , d1 , h1 , 5 , 0 ]);
+ elseif min1 == 0
+     sum_start = datenum([ y1 , m1 , d1, h1 - 1 , 35 , 0 ]);
  else
-     sum_start = datenum([ y1 , m1 , d1, h1, 35 , 0 ]);
+     sum_start = datenum([ y1 , m1 , d1, h1 , 35 , 0 ]);
  end
  
- if min2 > 0 & min2 < 30
+ if min2 > 0 & min2 <= 30
      sum_end = datenum([ y2 , m2 , d2 , h2 , 30 , 0 ]);
+ elseif min2 == 0
+     sum_end = datenum([ y2 , m2 , d2 , h2  , 0 , 0 ]);
  else
      sum_end = datenum([ y2 , m2 , d2 , h2 , 60 , 0 ]);
  end
+ fprintf('\n------------- 5 MIN PRECIP AGGREGATION ---------------------\n')
+ fprintf('1st Timestamp    1st Sum Int. |  End_Timestamp  Last Sum Int\n')
+ fprintf('%s           %s                 %s          %s\n',...
+     datestr(t_start,'mmm-dd'),datestr(sum_start,'mmm-dd'),...
+     datestr(t_end,'mmm-dd'),datestr(sum_end,'mmm-dd'))
+ fprintf('%s            %s-%s           %s           %s-%s\n',...
+     datestr(t_start,'HH:MM'), datestr(sum_start,'HH:MM'),datestr(sum_start + 5/288 , 'HH:MM'),...
+     datestr(t_end, 'HH:MM'), datestr(sum_end,'HH:MM'),datestr(sum_end + 5/288 , 'HH:MM') );
+ fprintf('------------------------------------------------------------\n\n')
  
  % Expand data set ends to nearest half hours
  % There are systematic gaps in logger timestamps where whole rows are
@@ -70,52 +90,40 @@ function precip_t = total_precip_calculator( t )
      't_min', sum_start );
 
  % Calculate change between timesteps and convert to mm ( 1in = 25.4 mm)
- dz = diff(t2.ActDepth)*25.4;
+ % I suspect only MCon Sulfur Spring is in inches and burned MCon is in
+ % centimeters...wtf
+ %if sitecode == UNM_sites.MCon_SS
+     dz = diff(t2.ActDepth)*25.4;
+ %else
+ %    dz = diff(t2.ActDepth)*10;
+ %end
  dz = vertcat( 0 , dz);
+ % Save raw depth changes for plotting later
+ dz_orig = dz;
    
  %Screen out negative increments. As long as the precip gauge is not
  %drained while it is raining, it should be OK. CR1000 program should
  %account for drains.
  neg_idx = find(dz < 0 );
- if plotfig
-     ax(1) = subplot(4,1,1);
-     plot(t2.timestamp,dz,'.');
-     title('raw dz')
- end
-  % Align diffs to t_(i+1). First time step will be 0
+
  dz(neg_idx) = 0;
-  if plotfig
-     ax(2) = subplot(4,1,2);
-     plot(t2.timestamp,dz,'.');
-       title(' > 0')
- end
- 
  dz(find(~isfinite(dz))) = 0;
- 
  %NOAH II accuracy is +/- 0.01" or 0.254 mm
  dz(find( dz < tol)) = 0;
- if plotfig
-     ax(3) = subplot(4,1,3);
-     plot(t2.timestamp,dz,'.');
-      title('>0 , > 0.254 mm')
- end
- dz(find( dz > 8 * nanstd(dz))) = 0;
- dz(find( dz > 10 ) ) = 0;
- if plotfig
-     ax(4) = subplot(4,1,4);
-     plot(t2.timestamp,dz,'.');
-     title('> 0 , > 0.254 mm, < 5 \sigma')
- end
- linkaxes(ax,'x')
- dynamicDateTicks(ax,'linked')
- % Create a new table with 'tipping bucket' measurements
+ dz(find( dz > max_30min_precip ) ) = 0;
+
+ %-------------------------------------------------------------------------
+ %                 Create 30 minute tipping bucket measurements
+ %------------------------------------------------------------------------
  t2 = [t2 array2table(dz)];
 
  % Get 30 min averages of met variables
  [num_delt_int, nn] = size(t2);
-
+ % Windspeed header variables are different
+ [~,ws_id]= regexp_header_vars(t2,'^Wspd$|^Wspd_avg$');
+ 
  temp_array = reshape(t2.ActTemp, [6, num_delt_int/6 ] );
- ws_array =  reshape(t2.Wspd, [6, num_delt_int/6 ] );
+ ws_array =  reshape(t2{:,ws_id}, [6, num_delt_int/6 ] );
  ts_30min = reshape(t2.timestamp, [6, num_delt_int/6] );  
  temp_avg = nanmean(temp_array);
  ws_avg =  nanmean(ws_array);
@@ -127,7 +135,9 @@ function precip_t = total_precip_calculator( t )
  
  precip_mm30min = (sum(precip_array)); % put summed precip in table
 
-
+ %-------------------------------------------------------------------------
+ %         Apply wind velocity and solid precip corrections
+ %-------------------------------------------------------------------------
  % Basic log wind profile. We could get fancier here if we had 3d wind data
  z0 = 2.0; % height of anemometer
  z = 3.0; % height of opening of NOAH II orifice
@@ -142,129 +152,83 @@ function precip_t = total_precip_calculator( t )
  end
  % Corr is in percentage??? Divide by 100...
   corr = corr./100;
-  
-precip_t= [ts_30min', precip_mm30min',(precip_mm30min.*corr)',corr'];
-var_names ={'timestamp','precip','precip_corr', 'corr'};
-precip_t = array2table(precip_t,'VariableNames', var_names);
 
-if plotfig
-    figure;
+%-------------------------------------------------------------------------
+%                 Make 30 minute output table
+%-------------------------------------------------------------------------  
+precip_t= [ts_30min', ...
+    precip_mm30min',(precip_mm30min.*corr)',...
+    corr',...
+    temp_avg'];
+
+var_names ={'timestamp',...
+    'P_NOAH','P_NOAH_corr',...
+    'NOAH_wind_corr'};
+var_units = { '--' ,...
+    'mm','mm',...
+    '--'};
+precip_t = array2table(precip_t(:,[1:4]),'VariableNames', var_names);
+precip_t.Properties.VariableUnits = var_units;
+
+%-------------------------------------------------------------------------
+%                 Plots
+%------------------------------------------------------------------------- 
+if draw_plots
+    figure('Position',[680 574 442 524],'Name',[char(sitecode),' Total Precip Diagnostics 1']);
     ax2(1) = subplot(2,1,1); 
-        plot(precip_t.timestamp,[precip_t.precip,precip_t.precip_corr],'.')
+        plot(precip_t.timestamp,precip_t.P_NOAH,'ok',...
+            'MarkerFaceColor',[0.800 0.8 0.8],'LineWidth',1,...
+            'Color',[0 0 0]); hold on
+        plot( precip_t.timestamp,precip_t.P_NOAH_corr,'.',...
+            'MarkerSize',10,'Color',[0.33 0.75 0.93]); hold off
         ylabel('mm/5min')
+        legend('uncorrected','corrected')
+       
+        
     ax2(2) = subplot(2,1,2); 
-         plot(precip_t.timestamp,[cumsum(precip_t.precip),cumsum(precip_t.precip_corr)])
+         plot(precip_t.timestamp,[cumsum(precip_t.P_NOAH),cumsum(precip_t.P_NOAH_corr)],...
+             'LineWidth',1)
          ylabel('mm')
-         title(['Cumulative precip = ', num2str(max(cumsum(precip_t.precip_corr))), ' mm',...
-             '/',  num2str(max(cumsum(precip_t.precip_corr))/25.4), ' in' ] ) 
-         linkaxes(ax2,'x')
-         dynamicDateTicks(ax2,'linked')
+         title(['Cumulative precip = ', num2str(max(cumsum(precip_t.P_NOAH_corr))), ' mm',...
+             ' (',  num2str(max(cumsum(precip_t.P_NOAH_corr))/25.4), ' in )' ] ) 
+         
+   linkaxes(ax2,'x')
+   dynamicDateTicks(ax2,'linked')
+   
+fillData = getFillPrecip(sitecode, year,t_start, t_end );   
+
+% Compare filled Precip with total precip gage
+[fillData precip_t ] = ...
+    merge_tables_by_datenum(fillData,precip_t,'timestamp','timestamp',0.01,t_start,t_end);
+P = precip_t.P_NOAH;
+Pf = fillData.P;
+ts1 = precip_t.timestamp;
+ts2 = fillData.timestamp;
+
+figure('Name','Total Precip Diagnostics 2');
+plot(ts1,cumsum(P,'omitnan'),':k',ts2,cumsum(Pf,'omitnan'),'r');
+legend(sprintf('%s Gauge',char(sitecode)),'Redondo','Location','Best');
+ylabel('cumulative precip [mm]');
+datetick('x','keepticks', 'keeplimits' );
+title(sprintf('Redondo = %3.1f mm NMCon = %3.1f mm', ...
+    max(cumsum(Pf,'omitnan')),...
+    max(cumsum(P,'omitnan')))); 
 end
+end
+
+
+%========================= SUBFUNCTIONS ==================================
+
+function fillData = getFillPrecip(sitecode, year,t_start,t_end )
+
+% Get gapfilled data
+fillData = parse_forgapfilling_file(sitecode,year);
+keepidx = fillData.timestamp > t_start &...
+          fillData.timestamp < t_end;
+fillData(~keepidx,:) = [];
+
+fillData = fillData(:,{'timestamp','P'});
+
 end
   
- % Plot of corrections
-%  ws_test = linspace(1,10,20)';
-%  figure;plot(ws_test, [exp(4.606 - 0.036 .* (ws_test .^ 1.75 )) ,...
-%                  101.04 - 5.62.* ws_test ])
-%  legend('Solid Precip','Liquid Precip')
-%  xlabel('Wind Speed [m/s]'); ylabel('Precip wind correction')
- 
-%  precip_t = [ts_30min', precip_mm30min', precip_mm30min'.*corr',... 
-%      corr', ws_avg', temp_avg' ];
-%  var_names ={'timestamp','precip_raw', 'precip_corr',...
-%      'correction', 'ws', 'temperature'};
-%  var_units = {'serial date', 'mm' , 'mm', 'unitless', 'ms-1','C'};
-%  precip_t = array2table(precip_t,'VariableNames',var_names);
-%  precip_t.Properties.VariableUnits = var_units;
 
-
-% 
-% nonan = precip_t.precip_corr;
-% nonan( find( isnan( nonan ) )) = 0;
-% cum_precip_corr = cumsum( nonan );
-% 
-% figure
-% ax(1) = subplot(2,1,1);
-%     plot(precip_t.timestamp,[precip_t.precip, precip_t.precip_corr]);
-% ax(2) = subplot(2,1,2);
-%     plot(precip_t.timestamp,[cumsum(precip_t.precip), cum_precip_corr]);
-% linkaxes(ax,'x')
-% dynamicDateTicks([ax(1) ax(2)],'linked')
- 
-%%%%%%%%
-% PLOTS
-%%%%%%%%
-%
-%  h_viewer = fluxraw_table_viewer(precip_t, 'this_site', ...
-%                 max(ts_30min));
-%             figure( h_viewer );  % bring h_viewer to the front
-%             waitfor( h_viewer );
-% Test different tolerances for filtering noise             
-%   subplot(3,1,1) 
-%     plot( t2.timestamp, dz ); datetick('x'); title('raw')
-%  subplot(3,1,2)
-%      tol = 0.05;
-%      dz1 = dz;
-%      dz1(find( dz1 < tol)) = 0;
-%     plot( t2.timestamp, dz1 ); datetick('x')
-%  subplot(3,1,3)
-%      tol = 0.254;
-%      dz2 = dz;
-%      dz2(find( dz2 < tol)) = 0;
-%     plot( t2.timestamp, dz2 ); datetick('x')
-%  figure;
-%   subplot(3,1,1)
-%   hist(dz)
-%   subplot(3,1,2)
-%   hist(dz1)
-%   subplot(3,1,3)
-%   hist(dz2)
-
- %%%%%%%%%%%%%%%%%
- %%% PLOTS
- %%%%%%%%%%%%%%%%%
-%  % Plot 1 - 5 min precip data with varying threshold cutoffs
-%  ax(1) = subplot(3,1,1) ;
-%     plot( t2.timestamp, dz ); datetick('x'); title('raw');
-%     sumP = max(cumsum(dz));
-%     numobs = numel(dz);
-%     ylabel('P [mm/5min]');title(...
-%         sprintf('Cumulative P = %3.2f mm (%3.2f in) \n %d raw obs.',...
-%         sumP,sumP/25.4,numobs));
-%     datetick
-%  ax(2) = subplot(3,1,2);
-%      tol = 0.05;
-%      dz1 = dz;
-%      remove_idx = find( dz1 < tol);
-%      dz1(remove_idx) = 0;
-%      sumP = max(cumsum(dz1));
-%     plot( t2.timestamp, dz1 ); datetick('x')
-%     ylabel('P [mm/5min]');title(...
-%         sprintf('Thresh = 0.05 mm Cumulative P = %3.2f mm (%3.2f in) \n %d (%3.1f%%) obs. removed',...
-%         sumP,sumP/25.4,numel(remove_idx),numel(remove_idx)/numobs*100));
-%  ax(3) = subplot(3,1,3);
-%      tol = 0.254;
-%      dz2 = dz;
-%      remove_idx = find( dz2 < tol);
-%      dz2(remove_idx) = 0;
-%      sumP = max(cumsum(dz2));
-%     plot( t2.timestamp, dz2 ); datetick('x')
-%     ylabel('P [mm/5min]');title(...
-%         sprintf('Thresh = 0.254 mm   Cumulative P = %3.2f mm (%3.2f in)\n %d (%3.1f%%) obs. removed',...
-%         sumP,sumP/25.4,numel(remove_idx),numel(remove_idx)/numobs*100));
-%     
-%  linkaxes(ax,'x')
-%  dynamicDateTicks(ax,'linked')
-% 
-% function nonan = nan_cumsum( arr )
-%     nonan = arr;
-%     nonan( find( isnan( nonan ) )) = 0;
-%     nonan = cumsum( nonan );
-% end
-%  
-%   % Plot 2 - 30 min precip rates with corrections
-%  dz_array = [dz dz1 dz2];   % compile dz with varying cutoffs into table
-%  dztbl = array2table(dz_array);
-%  dztbl.Properties.VariableNames = {'raw' ,'k_p05', 'k_p254'};
- 
- 
