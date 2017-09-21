@@ -49,6 +49,8 @@ else
 end
  
 loggers = {conf.make};
+addpath(genpath('A:\Code\NMEG_HarvestSftp'));
+cd('A:\Code\NMEG_HarvestSftp')
 for i = 1:numel(loggers)
     fmts = char(conf(i,:).conv_file_fmt);
     fmts = strsplit(fmts,{',',' '});
@@ -71,10 +73,13 @@ for i = 1:numel(loggers)
                     '_',char(conf(i,:).make),'_1.dat'];    
         end
         % DOWNLOAD FROM SFTP
+        
         ssh2_conn = scp_simple_get('socorro.unm.edu', 'eddyflux','ravafru8',... %Server info
             [remote_site_dir,remote_file],...                                   % File to retrieve
             fullfile( getenv('FLUXROOT'),'SiteData',char(UNM_sites(sitecode)),'wireless_data')); %Destination
     end
+    rmpath(genpath('A:\Code\NMEG_HarvestSftp'))
+    cd('A:\Code\NMEG_fluxproc')
 end
 
 

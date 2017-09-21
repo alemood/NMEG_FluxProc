@@ -181,6 +181,10 @@ for i = 1:numel( rawTables )
     
     % ----------- Rename sensors if needed -----------------
     if exist( sensorRenameFile, 'file' )
+        if isdatetime(renames.first)
+            renames.first = datestr(renames.first,'YYYY-mm-DD');
+            renames.last = datestr(renames.last,'YYYY-mm-DD');
+        end
         firstRenameDate = datenum( renames.first, 'YYYY-mm-DD' );
         lastRenameDate = datenum( renames.last, 'YYYY-mm-DD' );
         % Which header changes are in this TOA5's date range
