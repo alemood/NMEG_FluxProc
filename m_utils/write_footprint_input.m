@@ -26,9 +26,9 @@
 % to calculate the footprint
 
 % Site and year selection
-sitecode = UNM_sites.MCon;
+sitecode = UNM_sites.MCon_SS
 
-year = 2010;
+year = 2016;
 
 % Site configuration
 conf = parse_yaml_config( sitecode ,'SiteVars' );

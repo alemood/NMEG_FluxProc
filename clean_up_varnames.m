@@ -51,7 +51,7 @@ clean_names = regexprep( clean_names, '\%','prcnt');
 % replace 2nd '_mean' with '_mean2'
 % FIXME - this was a kludge to fix duplicated names when eddypro files were
 % added to the fluxall. This may break!
-warning('~~~~~ If horizontal table concatentation fails, fix code here! ~~~')
+% warning('~~~~~ If horizontal table concatentation fails, fix code here! ~~~')
 % if numel(clean_names) > 174;
 % clean_names{175} = 'mean2';
 % end

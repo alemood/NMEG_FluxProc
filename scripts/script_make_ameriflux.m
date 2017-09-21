@@ -24,7 +24,7 @@ end
 
 flags = [];
 count = 1;
-for k =2
+for k =3
     switch k
         case 1
             sitelist = { UNM_sites.GLand, UNM_sites.SLand, UNM_sites.New_GLand ,...
@@ -37,8 +37,8 @@ for k =2
             yearlist =[2013];
             partmethod ='old_eddyproc';
         case 3
-            sitelist = {UNM_sites.PPine};
-            yearlist = [2009:2011,2013];
+            sitelist = {UNM_sites.New_GLand};
+            yearlist = 2016;
             partmethod ='eddyproc';
         case 4
             sitelist = {UNM_sites.PJ_girdle};
