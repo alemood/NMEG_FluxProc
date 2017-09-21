@@ -44,13 +44,21 @@ if strcmpi( logger_name, 'flux' )
     % Directory to put new TOA5 files in
     toa5_data_dir = fullfile(get_site_directory( site ), 'toa5');
 else
-    thirty_min_file = dir( fullfile( raw_data_dir , '*.dat'));
-    % Still need this to pass t
+    conf = ...
+        parse_yaml_config( site ,'Dataloggers',...
+        'date_range',[datenum(2007,1,1);now]);
+    idx = ...
+        find( cellfun( @(x) ~isempty(x),regexp( ...
+        {conf.dataloggers.name}, logger_name ) ) );
+    logger_id = conf.dataloggers(idx).ID;
+    
+    thirty_min_file = dir( fullfile( raw_data_dir , sprintf('%d*.dat' , logger_id)));
+    % Still need this to pass the 10hz data
     ts_data_file = dir(fullfile(raw_data_dir, '*.ts_data*'));
     % Directory to put new TOA5 files in
     toa5_data_dir = fullfile(get_site_directory( site ),...
-                                'secondary_loggers',...
-                                logger_name); 
+        'secondary_loggers',...
+        logger_name);
 end
 
 
@@ -127,22 +135,36 @@ else
             end
         end
     end
-    
-    %rename the TOA5 file according to the site and place it in the
-    %site's TOA5 directory
+    % =====================================================================
+    % RENAME TOA5 FILE
+    % =====================================================================
+    % rename the TOA5 file according to the site and place it in the
+    % site's TOA5 directory. Use the secondary data logger ID to help with 
+    % renaming secondary loggers into less convoluted names.
     default_root = sprintf('TOA5_%s',...
         char(regexp(thirty_min_file.name, ...
         '.*\.flux', 'match')));
     default_name = dir(fullfile(output_temp_dir, [default_root, '*']));
-    newname = strrep(default_name.name, ...
-        default_root, ...
-        sprintf('TOA5_%s', char(site)));
+    % Check to see if the logger is a flux logger or secondary logger
+    if strcmpi( logger_name, 'flux')
+        newname = strrep(default_name.name, ...
+            default_root, ...
+            sprintf('TOA5_%s', char(site)));   
+    elseif ~strcmpi( logger_name, 'flux')
+        newname = ...
+            sprintf('TOA5_%s_%s_%s.dat',site,logger_name,...
+            char(regexp(default_name.name,'\d\d\d\d_\d\d_\d\d','match') ) );
+    end
+    
     default_fullpath = fullfile(output_temp_dir, default_name.name);
     newname_fullpath = fullfile(toa5_data_dir, newname);
+    
+    
     if exist(newname_fullpath) == 2
         % if file already exists, overwrite it
         delete(newname_fullpath);
     end
+    
     
     fprintf( '%s --> %s\n', default_fullpath, newname_fullpath );
     
