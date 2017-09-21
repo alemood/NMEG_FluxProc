@@ -56,6 +56,7 @@ properties
     latitude = NaN;
     longitude = NaN;
     elevation = NaN;
+    color = NaN;
     
 end %properties
 
@@ -65,7 +66,7 @@ methods
     function obj = UNM_sites_info( this_site )
     % UNM_SITES_INFO - class constructor
     %   
-    warning('FIXME - Trying to deprecate this code (UNM_sites_info.m) \n Replace with parse_yaml_config')
+    %warning('FIXME - Trying to deprecate this code (UNM_sites_info.m) \n Replace with parse_yaml_config')
     if isnumeric( this_site )
         this_site = UNM_sites( this_site );
     elseif ischar( this_site )
@@ -80,6 +81,7 @@ methods
         obj.latitude = 34.3402;
         obj.longitude = -106.68542;
         obj.elevation = 1619;
+        obj.color  = [0.9,0.5,0.0];
         
     elseif this_site ==  UNM_sites.SLand
         obj.short_name = 'SLand';
@@ -89,6 +91,7 @@ methods
         obj.latitude = 34.3338;
         obj.longitude = -106.73401;
         obj.elevation = 1608;
+        obj.color = [0.6, 0.2, 0];
         
     elseif this_site ==  UNM_sites.JSav
         obj.short_name = 'JSav';                            
@@ -98,6 +101,7 @@ methods
         obj.latitude = 34.425489;
         obj.longitude = -105.861545;
         obj.elevation = 1927;
+        obj.color =[0.25, 1.0, 0.0];
         
     elseif this_site ==  UNM_sites.PJ
         obj.short_name = 'PJ';                            
@@ -107,6 +111,7 @@ methods
         obj.latitude = 34.437; 
         obj.longitude = -106.238;
         obj.elevation = 2195;
+        obj.color = [0.0, 0.5, 0.0];
         
     elseif this_site ==  UNM_sites.PPine
         obj.short_name = 'PPine';                            
@@ -116,7 +121,7 @@ methods
         obj.latitude = 35.86236;
         obj.longitude = -106.59743;
         obj.elevation = 2488;
-
+        obj.color = [0.5, 0.5, 1.0];
     elseif this_site ==  UNM_sites.MCon
         obj.short_name = 'MCon';                            
         obj.long_name = 'Valles Caldera Mixed Conifer';
@@ -125,6 +130,7 @@ methods
         obj.latitude = 35.888;
         obj.longitude = -106.532;
         obj.elevation = 3025;
+        obj.color = [0.0, 0.0, 0.6];
     elseif this_site ==  UNM_sites.TX
         obj.short_name = 'TX';                            
         obj.long_name = 'Freeman Ranch juniper savanna';
@@ -160,6 +166,7 @@ methods
         obj.latitude = 34.437;
         obj.longitude = -106.238;
         obj.elevation = 2195;
+        obj.color = [0.0, 0.85, 0.0];
         
         
     elseif this_site ==  UNM_sites.New_GLand
@@ -170,6 +177,7 @@ methods
         obj.latitude = 34.3402;
         obj.longitude = -106.68542;
         obj.elevation = 1619;
+        obj.color = [0.9, 0.8, 0.0];
         
     elseif this_site ==  UNM_sites.SevEco
         obj.short_name = 'Sev_Eco';
@@ -197,6 +205,7 @@ methods
         obj.latitude = 35.919 ; 
         obj.longitude = -106.614216;
         obj.elevation = 2752;
+        obj.color = [0.3, 0.0, 0.5];
         
     end % if/then/else
     end % constructor
