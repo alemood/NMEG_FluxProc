@@ -108,7 +108,7 @@ if strcmp(args.Results.data_location , 'wireless' )
     remote_dir = struct2table(remote_dir); % Structures are a bit cumbersome, convert to table
     % Get file creation timestam
     [ts_last_dl idx] = max( remote_dir.datenum ); % Find most recent download
-    fprintf(' Last wireless download occured %s\n', char( remote_dir.date( idx )))
+    fprintf(' Last wireless download occured %s\n', datestr( remote_dir.datenum( idx )))
     % If it wasn't downloaded today, download
     if (floor(now)-floor(ts_last_dl)) ~= 0  % should be 0 if last download was from the previous day
         fprintf(' Downloading all dataloggers from Socorro.\n')
@@ -265,7 +265,12 @@ if strcmp( logger_name, 'flux' )
                    fullfile( get_site_directory( this_site ) , ...
                    'wireless_data', [first_tokens{1},'.dat'] );
                 [ fluxdata_convert_success, toa5_fname ] = ...
-                    append_current_toa5_file( this_site, wireless_flux_file , append_status ) ;
+                    manipulate_wireless_toa5_file( this_site, wireless_flux_file  ) ;
+                if ~fluxdata_convert_success
+                    main_success = 0;
+                    fprintf( 'ABORTING WIRELESS PROCESSIN\n' );
+                    return
+                end
             catch err
                 fluxdata_convert_success = false;
                 % echo the error message
@@ -353,7 +358,7 @@ if regexp(logger_name,'soil|precip|sap')
 % End secondary logger conversions    
 end
 
-%copy uncompressed TOB1 data to MyBook
+%copy uncompressed TOB1 data to MyBook (Redondito)
 try 
     fprintf(1, '\n----------\n');
     fprintf(1, 'COPYING UNCOMPRESSED TOB1 DATA TO MYBOOK...\n');
@@ -406,18 +411,18 @@ catch err
     fprintf( 'continuing with processing\n' );
 end
 
-% transfer the compressed raw data to edac
+% transfer the compressed raw data to glacier
 try
     fprintf(1, '\n----------\n');
     if args.Results.interactive
         
-        fprintf(1, 'TRANSFERING COMPRESSED RAW DATA TO EDAC...\n');
+        fprintf(1, 'TRANSFERING COMPRESSED RAW DATA TO GLACIER...\n');
         % h = msgbox( 'click to begin FTP transfer', '' );
         % Why wait?
         % waitfor( h );
         % transfer_2_edac(this_site, card_archive_name)
+        transfer_2_glacier(this_site,card_archive_name);
         fprintf(1, 'Done transferring.\n');
-        warning('No longer transferring to EDAC. Back data up to AWS Glacier')
     else
         fprintf(1, ['Non-interactive -- skipping compressed raw data ' ...
                     'transfer to edac...\n']);

@@ -1,20 +1,43 @@
 function success = transfer_2_glacier(site, compressed_data_fname)
 % TRANSFER_2_GLACIER- transfer compressed tower raw data to Amazon Glacier  
 %
-% Places data into
-% edacdata1.unm.edu:/data/epscor/private/data/Upland_node/SITE/Raw/, with SITE
-% the abbreviated name of the UNM site.  Requires user to enter the password for
-% user jdelong on edacdata1.unm.edu.  
-%
-% Following UNIX convention nothing is echoed to the display while the password
-% is typed (no ****, ....., etc.).
-%
-% NOTES
-% (1) Requires Cygwin's sftp (secure file transfer protocol) to be available on
-% the system.  See http://www.cygwin.com/.%
-% (2) Spawns a Windows command prompt window.  This window will not close
-% automatically when the transfer is complete.  It will display a message
-% when the user may close the window.% 
+% glacier-put account[:password] local-file region-code vault/folder
+%  ---------------------------------------------------------------------------
+% 
+%  Where:
+% 
+%   account - account name you specified when adding an account using gui wizard
+%   password - optional password to decrypt account credentials (master password)
+%   local-file - path to the file or directory on your disk (wildcards allowed)
+%   region-code - amazon glacier region code, supported regions are: 
+% 
+%     [region name]                        [region code]
+% 
+%      US East (N. Virginia)                 us-east-1
+%      US East (Ohio)                        us-east-2
+%      US West (N. California)               us-west-1
+%      US West (Oregon)                      us-west-2
+%      Canada (Central)                   ca-central-1
+%      EU (Ireland)                          eu-west-1
+%      EU (London)                           eu-west-2
+%      EU (Frankfurt)                     eu-central-1
+%      Asia Pacific (Tokyo)             ap-northeast-1
+%      Asia Pacific (Sydney)            ap-southeast-2
+%      Asia Pacific (Seoul)             ap-northeast-2
+%      Asia Pacific (Mumbai)                ap-south-1
+% 
+%   vault/folder - amazon glacier vault name and folder
+% 
+% 
+%  Examples:
+% 
+%   glacier-put my-account c:\backup us-east-1 my-vault/backups
+%   glacier-put my-account c:\backup\*.bkf eu-west-1 my-vault
+%   glacier-put my-account "e:\my videos" eu-west-1 "vault-3/my videos"
+%   glacier-put encrypted-account:85sd4df F:\Docs eu-west-1 Vault-4/Docs
+%  
+%  If spaces appear in the path, enclose it in quotation marks.
+%  Do not use traling backslash.
 %
 % USAGE
 %    success = transfer_2_glacier(site, compressed_data_fname)
@@ -32,37 +55,25 @@ site = UNM_sites( site );
 
 success = -1; %initialize    
 
-glacier_uploader_path = fullfile('C:','Program Files','glacieruploader-0.1.0\glacieruploader-impl\target');
+% Path to FASTGLACIER upload executable
 
+glacier_uploader_path = fullfile('C:','"Program Files"','FastGlacier','glacier-put.exe');
 
 [fpath, fname, fext] = fileparts(compressed_data_fname);
 
-
-%write an sftp script to a temporary file
-calling_dir = pwd();
-cd(glacier_uploader_path);
-glacier_script_file = tempname(getenv('TMP'));
-fid = fopen(glacier_script_file, 'w+');
-fprintf(fid, ['\n\n#Transfering compressed raw data to edacdata1.unm.edu.  ' ...
-              'This will likely take a few minutes.  sftp will likely say it ' ...
-              'is stalled at least once -- please ignore these messages.\n\n']);
-fprintf(fid, 'cd %s\n', glacier_uploader_path);
-%fprintf(fid, 'progress\n');  %enable SFTP progress updates
-%fprintf(fid, sprintf( 'put %s\n', unixpath ) );
-fprintf(fid, ['\n\n#This DOS window will not close by itself -- you may ' ...
-              'close it now by typing ''exit'' at the prompt.\n']);
-fclose(fid);
 
  blk_fname = create_blocking_file( [ 'blocking file for %s zipped data ' ...
                      'transfer --> Glacier' ] );
 
 % run the transfer in a dos window
+cmd = sprintf('%s %s %s %s %s',...
+glacier_uploader_path,... 
+'LitvakLab',...% my-account
+compressed_data_fname ,...% local compressed file
+'us-east-1',...% region
+char(site));% vault path on glacier
 
-cmd = sprintf(['java -jar glacieruploader-impl-0.1.0-jar-with-dependencies.jar ', ...
-              '--vault %s ', ...
-              '--multipartupload %s ',...
-              '--partsize 16777216'],...
-              char( site ), compressed_data_fname );
+
 cmd = sprintf( '%s & del %s &', cmd, blk_fname );
 
 [s, r] = dos(cmd);
@@ -80,10 +91,5 @@ pause off
 % h = warndlg('press OK when file transfer is complete', 'transfering file');
 % waitfor(h);
 
-%remove the sftp script
- delete(glacier_script_file);
-
-%change matlab back to the original directory
-cd(calling_dir);
 
 success = 0;
