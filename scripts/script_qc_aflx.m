@@ -13,14 +13,14 @@
 
 clear all; close all
 
-site = UNM_sites.PJ;
+site = UNM_sites.New_GLand;
 siteVars = parse_yaml_config(site,'SiteVars');
 aflx_site = siteVars.ameriflux_name;
-yearlist = 2008;
+yearlist = 2016;
 
 % QC Parameters
 write_qc = false;
-write_gf = false;
+write_gf = true;
 % Ameriflux Paramaeters
 make_daily = false;
 write_files = true;
@@ -29,20 +29,20 @@ process_soil = false;
 version = 'NMEG';  %'in_house';
 partmethod = 'eddyproc';
 do_qc =false;
-% %%
-% UNM_RemoveBadData(site, year, 'draw_plots',0, ...
-%    'write_QC', write_qc, 'write_GF', write_gf, ...
-%    'old_fluxall', old_fluxall);
-% %%
-% UNM_fill_met_gaps_from_nearby_site( site, year, 'write_output', write_gf );
-% 
-% %%
-% UNM_Ameriflux_File_Maker( site, year, ...
-%     'write_files', write_files, ...
-%     'write_daily_file', make_daily, ...
-%     'process_soil_data', process_soil,...
-%     'version', version , ...
-%     'gf_part_source', partmethod);
+%%
+UNM_RemoveBadData(site, year, 'draw_plots',0, ...
+   'write_QC', write_qc, 'write_GF', write_gf, ...
+   'old_fluxall', old_fluxall);
+%%
+UNM_fill_met_gaps_from_nearby_site( site, year, 'write_output', write_gf );
+
+%%
+UNM_Ameriflux_File_Maker( site, year, ...
+    'write_files', write_files, ...
+    'write_daily_file', make_daily, ...
+    'process_soil_data', process_soil,...
+    'version', version , ...
+    'gf_part_source', partmethod);
 %   
 for i = 1:length(sitelist)
     site = sitelist{i};

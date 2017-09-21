@@ -822,7 +822,7 @@ switch sitecode
         
         [soilt_vars soilt_idx] = regexp_header_vars( T_soil_rbd, 'TCAV_|tcav' );
         [shf_vars shf_idx] = regexp_header_vars( T_soil_rbd, 'SHF_' );
-        Sites without TCAV will need to have shallow probes averaged
+       % Sites without TCAV will need to have shallow probes averaged
     case { UNM_sites.PJ, UNM_sites.PJ_girdle, UNM_sites.TestSite }
         if year == 2009
             [swc_vars swc_idx] = regexp_header_vars( T_soil_rbd,  'SWC_[A-Z]\d_[2p5|5]_[A-Za-z]' );

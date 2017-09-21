@@ -310,7 +310,7 @@ methods
             % Put in table array. If table is total precip, process into
             % 30min intervals.
             if strcmpi( conf.name,'precip')
-                i_data = total_precip_calculator ( i_data );
+                i_data = total_precip_calculator ( i_data, obj.sitecode,obj.date_start,obj.date_end );
             end                
             table_array{ i } = i_data;
         end

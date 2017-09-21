@@ -107,6 +107,8 @@ elseif sitecode == 2 % SLand
         output = fill_30min_flux_processor( output, 2, 2013, DOYidx(10.68), DOYidx(11.07));
         output = fill_30min_flux_processor( output, 2, 2013, DOYidx(14.81), DOYidx(15.28));
         output = fill_30min_flux_processor( output, 2, 2013, DOYidx(240.48), DOYidx(241.46));
+    elseif year ==2017
+        output = fill_30min_flux_processor( output, 2, 2017, DOYidx( 216.4167 ) , DOYidx(249.3333));
     end
 
 elseif sitecode == 3 % JSav

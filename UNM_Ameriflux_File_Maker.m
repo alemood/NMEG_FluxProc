@@ -231,7 +231,7 @@ keenan = false;
 % Amend periods where gapfilling fails or is ridiculous
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%pt_tbl = amend_gapfilling_and_partitioning( sitecode, year, pt_tbl );
+pt_tbl = amend_gapfilling_and_partitioning( sitecode, year, pt_tbl );
 
 % This adds an Reco_HBLR_amended column
 
