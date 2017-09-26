@@ -14,8 +14,8 @@
 clear all; close all
     sitelist = { UNM_sites.PJ,UNM_sites.MCon,UNM_sites.JSav,...
                 UNM_sites.SLand, UNM_sites.GLand, UNM_sites.PPine};
-
-yearlist= 2014:2016;
+site = UNM_sites.PJ;
+year=2008;
 % QC Parameters
 write_qc = false;
 write_gf = false;
@@ -24,7 +24,7 @@ make_daily = false;
 write_files = true;
 old_fluxall = false;
 process_soil = false;
-version = 'NMEG';  %'in_house';
+version = 'aflx';  %'in_house';
 partmethod = 'eddyproc';
 do_qc =false;
 % %%
@@ -42,12 +42,11 @@ do_qc =false;
 %     'version', version , ...
 %     'gf_part_source', partmethod);
 %   
-for i = 1:length(sitelist)
-    site = sitelist{i};
+
     siteVars = parse_yaml_config(site,'SiteVars');
-aflx_site = siteVars.ameriflux_name;
-    for j = 1:length(yearlist)
-        year = yearlist(j);
+    aflx_site = siteVars.ameriflux_name;
+  
+   
 %%   
 % Load new ameriflux data
 if strcmpi(version, 'aflx')
@@ -75,6 +74,7 @@ clear('fluxraw');
             
 %%
 % Load AFLX modeled SW_in
+if 0
 AMPdir = 'C:\Research_Flux_Towers\Ameriflux_files\NM-Cluster-POT_SW_IN-2007-2017\NM-Cluster';
 fname = sprintf('%s_%d.csv',aflx_site,year);
 SWfile = fullfile(AMPdir,fname);
@@ -93,11 +93,11 @@ hold on
 plot(ts(idx),aflx_data.SW_IN(idx),'ok','MarkerFaceColor',[ 0 1 .1])
 legend('SW_{in,pot}','SW_{in,meas}','SW_{in,meas} > SW_{in,pot}')
 datetick;dynamicDateTicks
-
+end
 %waitfor( h1 );
               
 %%
-FCflagday = find(aflx_data.FC ~= -9999 & aflx_data.SW_IN ~= 0);
+FCflagday = find(~isnan(aflx_data.FC) & aflx_data.SW_IN ~= 0);
 h2 = figure; subplot(2,1,1)
 ts = datenum(year,1,1,0,30,0):1/48:datenum(year,12,31,24,0,0);
 plot(ts,aflx_data.USTAR,'.k',...
@@ -107,17 +107,12 @@ legend('USTAR(all)','USTAR FC not missing');
 title('daytime')
 
 subplot(2,1,2)
-FCflagnight = find(aflx_data.FC ~= -9999 & aflx_data.SW_IN == 0);
+FCflagnight = find(~isnan(aflx_data.FC) & aflx_data.SW_IN == 0);
 plot(ts,aflx_data.USTAR,'.k',...
     ts(FCflagnight),aflx_data.USTAR(FCflagnight),'.r');
 ylim([0 1.75])
 legend('USTAR(all)','USTAR FC not missing');
 title('nighttime')
-
-waitfor(h2)
-
-    end
-end
 
 
 
