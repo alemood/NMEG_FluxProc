@@ -790,8 +790,9 @@ switch sitecode
             
             % Fill missing LWin with correlated MCon LWin
             figure;
+            fillData = parse_fluxall_qc_file(UNM_sites.MCon, year_arg);
             idx = find(isnan(lw_incoming));
-          %  lw_incoming( idx) = 0.84.*lw_incoming_mcon(idx) + 68.19;
+            lw_incoming( idx) = 0.95.*fillData.lw_incoming(idx) + 34.12;
             plot(decimal_day,lw_incoming,'k');hold on
             plot(decimal_day(idx),lw_incoming( idx),'.r')
             legend('Gaps','filled')
@@ -872,6 +873,11 @@ switch sitecode
                 sw_incoming(idx) / cnr1_mult_old * cnr1_mult;
             % temperature correction just for long-wave
             [lw_incoming, lw_outgoing] = lw_correct(lw_incoming, lw_outgoing);
+            % LW in is garbage this year. Remove. The range is higher than
+            % all other years, though it appears to have the same
+            % cumulative distribution, just shifted up ~ 40 W/m2. Could be
+            % modeled later.
+            lw_incoming(:) = NaN;
             % calibration for par-lite sensor
             Par_Avg = Par_Avg * PAR_KZ_old_up_mult;
             

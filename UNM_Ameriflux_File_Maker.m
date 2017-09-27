@@ -231,7 +231,7 @@ keenan = false;
 % Amend periods where gapfilling fails or is ridiculous
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-pt_tbl = amend_gapfilling_and_partitioning( sitecode, year, pt_tbl );
+%pt_tbl = amend_gapfilling_and_partitioning( sitecode, year, pt_tbl );
 
 % This adds an Reco_HBLR_amended column
 
@@ -329,14 +329,31 @@ amflux_gaps( :, {'GPP_F_MR2005','RECO_MR2005','GPP_GL2010','RECO_GL2010', ...
     'RECO_MR2005_ecb','NEE_MR2005_ecb', ...
     'GPP_GL2010_amended_ecb','RECO_GL2010_amended_ecb',...
     'NEE_GL2010_amended_ecb'}) = [];
-
-% Add some gapfilled columns 
+% -----------------------------------------------------
+% Add some gapfilled columns for Ameriflux and reorder.
+% -----------------------------------------------------
 if strcmp( version , 'aflx' )
     amflux_gf ( : , {'GPP_PI' , 'RECO_PI' }) = [];
     amflux_gaps ( : , {'GPP_PI' , 'RECO_PI' }) = [];
     amflux_gaps ( : , {'SUN_FLAG' , 'NIGHT'} ) =  [] ;
-    
-    
+    % Add
+    amflux_gaps.TA_F = amflux_gf.TA_F;
+    amflux_gaps.RH_F = amflux_gf.RH_F;
+    amflux_gaps.VPD_F = amflux_gf.VPD_F;
+    amflux_gaps.P_F = amflux_gf.P_F;
+    % Reorder
+    t = amflux_gaps;
+    t = [t(:,'TIMESTAMP_START') t(:,'TIMESTAMP_END') ,...
+        t(:,'FC') t(:,'LE') t(:,'H') t(:,'CO2') t(:,'H2O') t(:,'USTAR'),...
+        t(:,'TA') t(:,'TA_F') t(:,'RH') t(:,'RH_F') t(:,'PA') t(:,'VPD') t(:,'VPD_F'),...
+        t(:,'P') t(:,'P_F'), t(:,'WD') t(:,'WS'),...
+        t(:,'NETRAD') t(:,'PPFD_IN') t(:,'SW_IN') t(:,'LW_IN') t(:,'SW_OUT') t(:,'LW_OUT'),...
+        t(:,'timestamp')];
+    % Check to see that all variable were entered into the reformatted
+    % table
+    if isequal(numel(t),numel(amflux_gaps))
+        amflux_gaps = t;
+    end 
 end    
 
 if args.Results.write_files
