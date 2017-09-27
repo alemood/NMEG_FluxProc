@@ -38,7 +38,7 @@ yr_solCalcs = vertcat(yr_solCalcs{:});
 yr_swinpot = yr_solCalcs(:,2);
 
 % Load SW data used by Ameriflux Data Team
-AMPdir = 'C:\Research_Flux_Towers\Ameriflux_files\NM-Cluster-POT_SW_IN-2007-2017\NM-Cluster';
+AMPdir = 'C:\Research_Flux_Towers\Ameriflux_files\FLUXNET2015\NM-Cluster-POT_SW_IN-2007-2017\NM-Cluster';
 fname = sprintf('%s_%d.csv',sitevars.ameriflux_name,year_arg);
 SWfile = fullfile(AMPdir,fname);
 swinpot2 = text_2_table(SWfile,'n_header_lines',1);

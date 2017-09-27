@@ -192,6 +192,7 @@ amflx_gf = add_cols( amflx_gf, NETRAD_new, ...
                     { 'NETRAD_F' }, { 'W/m2' }, NETRAD_flag ); %NETRAD_F
 amflx_gaps = add_cols( amflx_gaps, qc_tbl.NR_tot, { 'NETRAD' }, { 'W/m2' } );
   
+% VPD 
 amflx_gf = add_cols( amflx_gf, VPD_f, { 'VPD_F' }, vpd_unit, VPD_flag );
 amflx_gaps = add_cols( amflx_gaps, VPD, { 'VPD' }, vpd_unit );
 % Rg - pyrranometer

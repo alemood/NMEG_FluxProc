@@ -293,7 +293,7 @@ elseif sitecode == 5 % PPine
         output = fill_30min_flux_processor( output, 5,2013,15598, 15611);
         output = fill_30min_flux_processor( output, 5,2013,15823, 15861);
     elseif year == 2016
-        output = fill_30min_flux_processor( output, 5, 2016, DOYidx(1.02), DOYidx(1.33));
+        output = fill_30min_flux_processor( output, 5, 2016, DOYidx(1.0208), DOYidx(1.33));
         output = fill_30min_flux_processor( output, 5, 2016, DOYidx(1.75), DOYidx(2.35416));
         output = fill_30min_flux_processor( output, 5, 2016, DOYidx(2.7917), DOYidx(3.3125));
         output = fill_30min_flux_processor( output, 5, 2016, DOYidx(3.7708), DOYidx(4.3125));
